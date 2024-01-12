@@ -22,7 +22,7 @@
     <model name='ground_plane'>
       <static>true</static>
       <link name='link'>
-        <pose>10 0 0 0 0 0</pose>
+        <pose>10 0 0 0 -0 0</pose>
         <collision name='collision'>
           <geometry>
             <box>
@@ -67,7 +67,6 @@
       <pose>0 0 0 0 -0 0</pose>
       <self_collide>false</self_collide>
     </model>
-
     <model name='wall1'>
       <pose>10 10 1.4 0 -0 0</pose>
       <link name='box_link'>
@@ -115,8 +114,7 @@
       <static>true</static>
       <self_collide>false</self_collide>
     </model>
-
-   <model name='wall2'>
+    <model name='wall2'>
       <pose>10 -10 1.4 0 -0 0</pose>
       <link name='box_link'>
         <collision name='box_collision'>
@@ -163,8 +161,8 @@
       <static>true</static>
       <self_collide>false</self_collide>
     </model>
-<model name='wall3'>
-      <pose>20 0 1.4 0 -0 0</pose>
+    <model name='wall3'>
+      <pose>15 0 1.4 0 -0 0</pose>
       <link name='box_link'>
         <collision name='box_collision'>
           <geometry>
@@ -210,9 +208,8 @@
       <static>true</static>
       <self_collide>false</self_collide>
     </model>
-
-<model name='wall4'>
-      <pose>0 0 1.4 0 -0 0</pose>
+    <model name='wall4'>
+      <pose>9 0 1.4 0 -0 0</pose>
       <link name='box_link'>
         <collision name='box_collision'>
           <geometry>
@@ -258,9 +255,8 @@
       <static>true</static>
       <self_collide>false</self_collide>
     </model>
-
-   <model name='outsideS'>
-      <pose>6 0 1.4 0 -0 0</pose>
+    <model name='outsideS'>
+      <pose>12 0 1.4 0 -0 0</pose>
       <link name='box_link'>
         <collision name='box_collision'>
           <geometry>

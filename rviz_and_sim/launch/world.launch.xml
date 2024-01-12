@@ -1,5 +1,5 @@
 <launch>
-  <arg name="world" default="car_world.sdf" />
+  <arg name="world" default="car_small_oval.sdf" />
   <include file="$(find-pkg-share ros_gz_sim)/launch/gz_sim.launch.py">
     <arg name="gz_args" value="-r $(var world)"/>
   </include>
@@ -13,7 +13,7 @@
     <remap from="/model/car/odometry" to="/odom" />
     <remap from="/model/car/cmd_vel" to="/cmd_vel" />
     <remap from="/model/car/tf" to="/tf" />
-    <remap from="/world/car_world/model/nubot/joint_state" to="/joint_states"/>
+    <remap from="/world/car_world/model/car/joint_state" to="/joint_states"/>
   </node>
 
 </launch>

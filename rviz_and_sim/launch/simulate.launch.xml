@@ -1,6 +1,6 @@
 <launch>
   <arg name="use_rviz" default="true" />
-  <arg name="world"    default="car_world.sdf" />
+  <arg name="world"    default="car_small_oval.sdf" />
   <include file="$(find-pkg-share rviz_and_sim)/launch/car_rviz.launch.py">
     <arg name="use_jsp" value="none" />
     <arg name="use_rviz" value="$(var use_rviz)" />
@@ -10,5 +10,5 @@
     <arg name="world" value="$(var world)" />
   </include>
 
-  <node pkg="ros_gz_sim" exec="create" args="-topic /robot_description -x 15 -z 0.3" />
+  <node pkg="ros_gz_sim" exec="create" args="-topic /robot_description -x 10.5 -z 0.3 -Y 1.571" />
 </launch>

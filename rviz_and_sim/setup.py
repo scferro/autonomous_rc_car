@@ -13,7 +13,7 @@ setup(
         ('share/' + package_name + '/config', ['config/car_urdf.rviz']),
         ('share/' + package_name + '/urdf', ['urdf/car.urdf.xacro', 'urdf/car.gazebo.xacro']),
         ('share/' + package_name + '/env-hooks', ['env-hooks/car.dsv']),
-        ('share/' + package_name + '/worlds', ['worlds/car_world.sdf', 'worlds/car_simple.sdf']),
+        ('share/' + package_name + '/worlds', ['worlds/car_world.sdf', 'worlds/car_simple.sdf', 'worlds/car_small_oval.sdf']),
         ('share/' + package_name + '/launch', ['launch/car_rviz.launch.py', 'launch/simulate.launch.xml', 'launch/world.launch.xml'])
     ],
     install_requires=['setuptools'],

@@ -13,7 +13,7 @@
         <gazebo reference="base_laser" >
           <sensor name='gpu_lidar' type='gpu_lidar'>
             <topic>scan</topic>
-            <update_rate>10</update_rate>
+            <update_rate>30</update_rate>
             <lidar>
                 <scan>
                 <horizontal>
@@ -44,15 +44,23 @@
 
     <gazebo>
       <plugin
-        filename="libignition-gazebo-diff-drive-system.so"
-        name="ignition::gazebo::systems::DiffDrive">
+        filename="libignition-gazebo6-ackermann-steering-system.so"
+        name="ignition::gazebo::systems::AckermannSteering">
+
         <left_joint>rear_left_wheel_joint</left_joint>
         <right_joint>rear_right_wheel_joint</right_joint>
-        <wheel_separation>0.34</wheel_separation>
+        <left_steering_joint>rear_left_wheel_joint</left_steering_joint>
+        <right_steering_joint>rear_right_wheel_joint</right_steering_joint>
+        <wheel_separation>0.28</wheel_separation>
+        <kingpin_width>0.28</kingpin_width>
+        <wheel_base>0.28</wheel_base>
+        <steering_limit>0.5</steering_limit>
         <wheel_radius>0.054</wheel_radius>
         <odom_publish_frequency>30</odom_publish_frequency>
-        <frame_id>odom</frame_id>
-        <child_frame_id>base_link</child_frame_id>
+        <min_velocity>0</min_velocity>
+        <max_velocity>40</max_velocity>
+        <min_acceleration>0</min_acceleration>
+        <max_acceleration>5</max_acceleration>
       </plugin>
 
       <plugin
