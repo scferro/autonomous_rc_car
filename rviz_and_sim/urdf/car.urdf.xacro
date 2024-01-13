@@ -13,9 +13,9 @@
           />
         </inertial>
         <visual>
-          <origin xyz="-0 0 0.08" rpy="0 -0 0"/>
+          <origin xyz="-0 0 0.09" rpy="0 -0 0"/>
           <geometry>
-            <box size="0.35 0.08 0.06" />
+            <box size="0.34 0.1 0.1" />
           </geometry>
           <material name="pla">
              <color rgba="0.5 0.1 0.5 1.0" />
@@ -24,7 +24,7 @@
         <collision>
           <origin xyz="-0 0 0.08" rpy="0 -0 0"/>
           <geometry>
-            <box size="0.35 0.08 0.06" />
+            <box size="0.35 0.1 0.1" />
           </geometry>
         </collision>
       </link>
@@ -57,7 +57,9 @@
           <geometry>
             <cylinder radius="0.05" length="0.04" />
           </geometry>
-          <material name="pla" />
+          <material name="pla_black">
+             <color rgba="0.3 0.3 0.3 1.0" />
+          </material>
         </visual>
       </link>
 
@@ -205,7 +207,7 @@
 
 
       <joint name="lidar_sensor_joint" type="fixed">
-        <origin xyz="0.1 -0 0.12" rpy="0 0 0" />
+        <origin xyz="0.05 -0 0.16" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="base_laser" />
       </joint>
@@ -222,12 +224,6 @@
         <parent link="base_link" />
         <child link="rear_right_wheel" />
         <axis xyz="0 0 1" />
-      </joint>
-
-      <joint name="fixed_rear_axle" type="fixed">
-        <origin xyz="0.0 -0 0.0" rpy="0 0 0" />
-        <parent link="rear_left_wheel" />
-        <child link="rear_right_wheel" />
       </joint>
 
       <joint name="front_left_wheel_joint" type="continuous">
