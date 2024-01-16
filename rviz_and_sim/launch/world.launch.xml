@@ -5,10 +5,10 @@
   </include>
 
   <node pkg="ros_gz_bridge" exec="parameter_bridge"
-        args="/model/car/odometry@nav_msgs/msg/Odometry[gz.msgs.Odometry
-              /model/car/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V
-              /model/car/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist
-              /scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan
+        args="/model/car/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry
+              /model/car/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V
+              /model/car/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist
+              /scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan
               /world/car_world/model/car/joint_state@sensor_msgs/msg/JointState[gz.msgs.Model" >
     <remap from="/model/car/odometry" to="/odom" />
     <remap from="/model/car/cmd_vel" to="/cmd_vel" />

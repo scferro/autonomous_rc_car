@@ -77,12 +77,12 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        front_left_wheel:
+        front_left_hub:
           Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
-        front_left_hub:
+        front_left_wheel:
           Alpha: 1
           Show Axes: false
           Show Trail: false
