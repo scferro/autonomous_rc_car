@@ -57,7 +57,6 @@ class Explore(Node):
 
         # Check if there is an obstacle - if there is, turn, if not, go straight
         self.move_forward()
-        self.goal_pose_publisher.publish(self.goal)
         
 
     def laser_scan_callback(self, msg):
@@ -70,8 +69,8 @@ class Explore(Node):
 
         self.get_logger().info('Moving forward...')
 
-        twist_linear = Vector3(x=1.0, y=0.0, z=0.0)
-        twist_angular = Vector3(x=0.0, y=0.0, z=0.0)
+        twist_linear = Vector3(x=0.5, y=0.0, z=0.0)
+        twist_angular = Vector3(x=0.0, y=0.0, z=1.0)
 
         twist_command = Twist(linear=twist_linear, angular=twist_angular)
 
