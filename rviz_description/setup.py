@@ -24,7 +24,6 @@ setup(
     license='MIT',
     tests_require=['pytest'],
     entry_points={
-        'console_scripts': ['rviz_description = rviz_description.rviz_description:main',
-        ],
+        'console_scripts': ,
     },
 )
