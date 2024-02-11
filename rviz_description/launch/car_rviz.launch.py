@@ -25,12 +25,9 @@ def generate_launch_description():
              executable="joint_state_publisher",
              condition= LaunchConfigurationEquals("use_jsp", "jsp")
              ),
-        Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            arguments=['0', '0', '0', '0', '0', '0', '1', '/nusim/world', '/odom'],
-            name='static_tf_pub_world_odom'
-            ),
+        Node(package="rviz_description",
+             executable="rviz_description",
+             ),
         Node(
             package="robot_state_publisher",
             executable="robot_state_publisher",

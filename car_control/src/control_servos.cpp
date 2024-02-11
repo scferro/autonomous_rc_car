@@ -3,6 +3,8 @@
 ///
 /// PARAMETERS:
 ///     rate (double): the publishing rate for wheel speed messages
+///     cmd_max (int): the maximum servo command
+///     timeout (double): minimum time required between receiving commands
 /// SUBSCRIBES:
 ///     steering_cmd (std_msgs::msg::Int32): the command for the steering servo
 ///     drive_cmd (std_msgs::msg::Int32): the command for the drive motor ESC
@@ -79,12 +81,9 @@ private:
     time_now = now.seconds() + (now.nanoseconds() * 0.000000001);
 
     // Check if steering and drive commands received within before timeout
-    if ((time_now - time_last_steer) > timeout) {
-      RCLCPP_DEBUG(this->get_logger(), "No steering command received within last %f seconds.", timeout);
+    if (((time_now - time_last_steer) > timeout) || ((time_now - time_last_drive) > timeout)) {
+      RCLCPP_DEBUG(this->get_logger(), "Either no steering or no drive command received within last %f seconds. Timeout.", timeout);
       steering_cmd = default_steering_cmd;
-    }
-    if ((time_now - time_last_drive) > timeout) {
-      RCLCPP_DEBUG(this->get_logger(), "No drive command received within last %f seconds.", timeout);
       drive_cmd = default_drive_cmd;
     }
 
