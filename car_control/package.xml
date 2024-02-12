@@ -3,7 +3,7 @@
 <package format="3">
   <name>car_control</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>A package for low level control of the autonomous RC car</description>
   <maintainer email="stephencferro@gmail.com">scferro</maintainer>
   <license>TODO: License declaration</license>
 
@@ -17,6 +17,9 @@
   <depend>rclcpp</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
   
   <export>
     <build_type>ament_cmake</build_type>

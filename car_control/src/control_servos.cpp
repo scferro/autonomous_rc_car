@@ -8,6 +8,7 @@
 /// SUBSCRIBES:
 ///     steering_cmd (std_msgs::msg::Int32): the command for the steering servo
 ///     drive_cmd (std_msgs::msg::Int32): the command for the drive motor ESC
+///     mode (std_msgs::msg::Int32): the current mode
 
 #include <chrono>
 #include <memory>
@@ -31,14 +32,18 @@ public:
     declare_parameter("rate", 200.);
     declare_parameter("cmd_max", 180);
     declare_parameter("timeout", 1.);
+    declare_parameter("steer_left_max", 45);
+    declare_parameter("steer_right_max", 135);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
     cmd_max = get_parameter("cmd_max").as_int();
     timeout = get_parameter("timeout").as_double();
+    steer_left_max = get_parameter("steer_left_max").as_int();
+    steer_right_max = get_parameter("steer_right_max").as_int();
 
     // Define other variables
-    default_steering_cmd = cmd_max / 2;
+    default_steering_cmd = abs(steer_left_max + steer_right_max / 2);
     default_drive_cmd = cmd_max / 2;
     steering_cmd = default_steering_cmd;
     drive_cmd = default_drive_cmd;
@@ -46,6 +51,7 @@ public:
     time_now = now.seconds() + (now.nanoseconds() * 0.000000001);
     time_last_steer = time_now;
     time_last_drive = time_now;
+    mode = 0;
 
     // Subscribers
     steering_cmd_sub = create_subscription<std_msgs::msg::Int32>(
@@ -54,6 +60,9 @@ public:
     drive_cmd_sub = create_subscription<std_msgs::msg::Int32>(
       "drive_cmd",
       10, std::bind(&Control_Servos::drive_cmd_callback, this, std::placeholders::_1));
+    mode_sub = create_subscription<std_msgs::msg::Int32>(
+      "mode",
+      10, std::bind(&Control_Servos::mode_callback, this, std::placeholders::_1));
 
     // Main timer
     int cycle_time = 1000.0 / loop_rate;
@@ -68,11 +77,13 @@ private:
   double loop_rate, timeout;
   int cmd_max, steering_cmd, drive_cmd, default_steering_cmd, default_drive_cmd;
   double time_now, time_last_steer, time_last_drive;
+  int mode, steer_left_max, steer_right_max;
   rclcpp::Time now;
 
   // Initialize subscriptions and timer
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr steering_cmd_sub;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr drive_cmd_sub;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr mode_sub;
   rclcpp::TimerBase::SharedPtr main_timer;
 
   /// \brief The main timer callback, updates diff_drive state and publishes odom messages
@@ -84,6 +95,13 @@ private:
     // Check if steering and drive commands received within before timeout
     if (((time_now - time_last_steer) > timeout) || ((time_now - time_last_drive) > timeout)) {
       RCLCPP_DEBUG(this->get_logger(), "Either no steering or no drive command received within last %f seconds. Timeout.", timeout);
+      steering_cmd = default_steering_cmd;
+      drive_cmd = default_drive_cmd;
+    }
+
+    // If in MODE 1, reset commands to neutral
+    if (mode==1) {
+      RCLCPP_INFO(this->get_logger(), "MODE 1: Robot stopped.", timeout);
       steering_cmd = default_steering_cmd;
       drive_cmd = default_drive_cmd;
     }
@@ -126,6 +144,12 @@ private:
     }
     // Return the constrained command
     return cmd;
+  }
+
+  /// \brief Changes the mode
+  void steering_cmd_callback(const std_msgs::msg::Int32 & msg)
+  {
+    mode = msg.data;
   }
 };
 

@@ -9,6 +9,8 @@
 /// PUBLISHES:
 ///     steering_cmd (std_msgs::msg::Int32): the command for the steering servo
 ///     drive_cmd (std_msgs::msg::Int32): the command for the drive motor ESC
+/// CLIENTS:
+///     mode (car_control::srv::Mode): sets the current mode of the car based on button inputs
 
 #include <chrono>
 #include <memory>
@@ -20,6 +22,7 @@
 #include "std_msgs/msg/int32.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "car_control/srv/mode.hpp"
 
 // Used ChatGPT for debugging
 // Refer to Citation [5] ChatGPT
@@ -61,6 +64,9 @@ public:
       "wheel_speed",
       10, std::bind(&Drive_and_Steer::wheel_speed_callback, this, std::placeholders::_1));
 
+    // Clients
+    mode_cli = create_client<car_control::srv::Mode>("mode");
+
     // Main timer
     int cycle_time = 1000.0 / loop_rate;
     main_timer = this->create_wall_timer(
@@ -80,6 +86,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr wheel_speed_sub;
+  rclcpp::Client<car_control::srv::Mode>::SharedPtr mode_cli;
   rclcpp::TimerBase::SharedPtr main_timer;
 
   /// \brief The main timer callback, publishes servo commands for the drive and steering
@@ -102,6 +109,8 @@ private:
   void joy_callback(const sensor_msgs::msg::Joy & msg)
   {
     double fwd_input, rev_input, steer_input, drive_input;
+    int mode_in = 0;
+    car_control::srv::Mode request;
 
     // Get drive and steeing inputs from controller
     fwd_input = msg.axes[5];
@@ -114,11 +123,30 @@ private:
     } else {
         drive_input = -fwd_input + 1.0;
     }
-    RCLCPP_INFO(this->get_logger(), "drive_input: %f ", drive_input);
+    
     // Publish commands
     drive_cmd = ((drive_input + 2.0) / 4.0) * (cmd_max - cmd_min) + cmd_min;
     steer_cmd = ((steer_input + 2.0) / 4.0) * (cmd_max - cmd_min) + cmd_min;
 
+    // Check if mode buttons are pressed
+    if (msg.buttons[0]==1) {
+      request.mode = 0;
+      mode_in = 1;
+    } else if (msg.buttons[1]==1) {
+      request.mode = 1;
+      mode_in = 1;
+    } else if (msg.buttons[2]==1) {
+      request.mode = 2;
+      mode_in = 1;
+    } else if (msg.buttons[3]==1) {
+      request.mode = 3;
+      mode_in = 1;
+    }
+
+    // If mode button pressed, change mode
+    if (mode_in==1) {
+      auto result = client->async_send_request(request);
+    }
   }
 
   /// \brief The wheel_speed callback function, stores the current wheel speed reported by the encoder

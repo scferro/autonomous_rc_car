@@ -66,7 +66,7 @@ class Rviz_Description(Node):
         t.transform.rotation.z = 0.
         t.transform.rotation.w = 1.
 
-        #self.tf_static_broadcaster.sendTransform(t)
+        self.tf_static_broadcaster.sendTransform(t)
 
 
 def main(args=None):

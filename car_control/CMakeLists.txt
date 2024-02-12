@@ -17,6 +17,10 @@ find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
+rosidl_generate_interfaces(${PROJECT_NAME}_srv
+  "srv/Mode.srv"
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -29,27 +33,32 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-add_executable(read_encoder  src/read_encoder.cpp)
+add_executable(read_encoder src/read_encoder.cpp)
 ament_target_dependencies(read_encoder rclcpp std_msgs)
 
-add_executable(control_servos  src/control_servos.cpp)
+add_executable(control_servos src/control_servos.cpp)
 ament_target_dependencies(control_servos rclcpp std_msgs)
 
-add_executable(drive_and_steer  src/drive_and_steer.cpp)
+add_executable(drive_and_steer src/drive_and_steer.cpp)
 ament_target_dependencies(drive_and_steer rclcpp std_msgs geometry_msgs)
 
-add_executable(controller_interface  src/controller_interface.cpp)
+add_executable(controller_interface src/controller_interface.cpp)
 ament_target_dependencies(controller_interface rclcpp std_msgs sensor_msgs)
+
+add_executable(mode_node src/mode_node.cpp)
+ament_target_dependencies(mode_node rclcpp std_msgs)
 
 install(TARGETS
   read_encoder
   control_servos
   drive_and_steer
   controller_interface
+  mode_node
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY
+  srv
   DESTINATION share/${PROJECT_NAME}/
 )
 

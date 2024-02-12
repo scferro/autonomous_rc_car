@@ -1,7 +1,7 @@
 <robot name="car" xmlns:xacro="http://www.ros.org/wiki/xacro">
       <link name="base_link">
         <inertial>
-          <origin xyz="0 -0 0.08" rpy="0 -0 0"/>
+          <origin xyz="0 -0 0.01" rpy="0 -0 0"/>
           <mass value="1.14395" />
           <inertia
             ixx="0.126164"
@@ -13,18 +13,18 @@
           />
         </inertial>
         <visual>
-          <origin xyz="-0 0 0.09" rpy="0 -0 0"/>
+          <origin xyz="-0 0 0.095" rpy="0 -0 0"/>
           <geometry>
-            <box size="0.34 0.1 0.1" />
+            <box size="0.3 0.08 0.1" />
           </geometry>
           <material name="pla">
              <color rgba="0.5 0.1 0.5 1.0" />
           </material>
         </visual>
         <collision>
-          <origin xyz="-0 0 0.08" rpy="0 -0 0"/>
+          <origin xyz="-0 0 0.1" rpy="0 -0 0"/>
           <geometry>
-            <box size="0.35 0.1 0.1" />
+            <box size="0.34 0.1 0.1" />
           </geometry>
         </collision>
       </link>
@@ -33,7 +33,7 @@
       <joint name="base_joint" type="fixed">
              <parent link="base_link"/>
              <child link="base_footprint"/>
-             <origin xyz="0.0 0.0 -0.15" rpy="0.0 0.0 0.0" />
+             <origin xyz="0.0 0.0 -0.0" rpy="0.0 0.0 0.0" />
      </joint>
 
       <link name="base_laser">
@@ -59,6 +59,33 @@
           </geometry>
           <material name="pla_black">
              <color rgba="0.3 0.3 0.3 1.0" />
+          </material>
+        </visual>
+      </link>
+
+      <link name="camera_link">
+        <inertial>
+          <mass value="0.072"/>
+          <inertia
+            ixx="0.000166667"
+            iyy="0.000166667"
+            izz="0.000166667"
+            ixy="0.0"
+            ixz="0.0"
+            iyz="0.0"
+          />
+        </inertial>
+        <collision>
+          <geometry>
+            <box size="0.025 0.09 0.025" />
+          </geometry>
+        </collision>
+        <visual>
+          <geometry>
+            <box size="0.025 0.09 0.025" />
+          </geometry>
+          <material name="aluminum">
+             <color rgba="0.75 0.75 0.75 1.0" />
           </material>
         </visual>
       </link>
@@ -207,9 +234,15 @@
 
 
       <joint name="lidar_sensor_joint" type="fixed">
-        <origin xyz="0.05 -0 0.16" rpy="0 0 0" />
+        <origin xyz="0.08 -0 0.18" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="base_laser" />
+      </joint>
+
+      <joint name="camera_sensor_joint" type="fixed">
+        <origin xyz="0.14 -0 0.13" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="camera_link" />
       </joint>
 
       <joint name="rear_left_wheel_joint" type="continuous">
