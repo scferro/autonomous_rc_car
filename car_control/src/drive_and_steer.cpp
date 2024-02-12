@@ -22,15 +22,9 @@
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/u_int64.hpp"
+#include "std_msgs/msg/int32.hpp"
 #include "geometry_msgs/msg/twist.hpp"
-#include "geometry_msgs/msg/vector3.hpp"
-#include "sensor_msgs/msg/joint_state.hpp"
-#include "nuturtlebot_msgs/msg/sensor_data.hpp"
-#include "nuturtlebot_msgs/msg/wheel_commands.hpp"
-#include "turtlelib/geometry2d.hpp"
-#include "turtlelib/se2d.hpp"
-#include "turtlelib/diff_drive.hpp"
+#include "std_msgs/msg/float64.hpp"
 
 // Used ChatGPT for debugging
 // Refer to Citation [5] ChatGPT
@@ -90,10 +84,10 @@ public:
     // Subscribers
     cmd_vel_sub = create_subscription<geometry_msgs::msg::Twist>(
       "cmd_vel",
-      10, std::bind(&Drive_and_Steer::cmd_vel_callback, this, std::placeholders::_1))
+      10, std::bind(&Drive_and_Steer::cmd_vel_callback, this, std::placeholders::_1));
     wheel_speed_sub = create_subscription<std_msgs::msg::Float64>(
       "wheel_speed",
-      10, std::bind(&Drive_and_Steer::wheel_speed_callback, this, std::placeholders::_1))
+      10, std::bind(&Drive_and_Steer::wheel_speed_callback, this, std::placeholders::_1));
 
     // Main timer
     int cycle_time = 1000.0 / loop_rate;

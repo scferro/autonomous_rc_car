@@ -2,7 +2,9 @@
 /// \brief Reads the encoder and publishes the wheel speed
 ///
 /// PARAMETERS:
-///     rate (double): the publishing rate for wheel speed messages
+///     rate (double): the publishing rate for wheel speed messages (Hz)
+///     encoder_ticks (int): the number of encoder ticks per motor revolution
+///     rate (gear ratio): the gear ratio between the motor and wheels
 /// PUBLISHES:
 ///     wheel_speed (std_msgs::msg::Float64): the speed of the rear wheels
 
@@ -14,6 +16,7 @@
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/float64.hpp"
 
 using namespace std::chrono_literals;
 
@@ -49,7 +52,7 @@ public:
 private:
   // Initialize parameter variables
   int rate;
-  double loop_rate, gear ratio;
+  double loop_rate, gear_ratio;
   int encoder_ticks;
   double wheel_speed;
 

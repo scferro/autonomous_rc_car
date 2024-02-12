@@ -17,15 +17,9 @@
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/u_int64.hpp"
-#include "geometry_msgs/msg/twist.hpp"
-#include "geometry_msgs/msg/vector3.hpp"
-#include "sensor_msgs/msg/joint_state.hpp"
-#include "nuturtlebot_msgs/msg/sensor_data.hpp"
-#include "nuturtlebot_msgs/msg/wheel_commands.hpp"
-#include "turtlelib/geometry2d.hpp"
-#include "turtlelib/se2d.hpp"
-#include "turtlelib/diff_drive.hpp"
+#include "std_msgs/msg/int32.hpp"
+#include "sensor_msgs/msg/joy.hpp"
+#include "std_msgs/msg/float64.hpp"
 
 // Used ChatGPT for debugging
 // Refer to Citation [5] ChatGPT
@@ -52,10 +46,8 @@ public:
 
     // Define other variables
     cmd_neutral = (cmd_min + cmd_max) / 2;
-    linear_vel = 0.;
-    fwd_input = 1.;
-    rev_input = 1.;
-    steer_input = 0.;
+    wheel_speed = 0.;
+    motor_speed = 0.;
 
     // Publishers
     steering_cmd_pub = create_publisher<std_msgs::msg::Int32>("steering_cmd", 10);
@@ -64,10 +56,10 @@ public:
     // Subscribers
     joy_sub = create_subscription<sensor_msgs::msg::Joy>(
       "joy",
-      10, std::bind(&Drive_and_Steer::joy_callback, this, std::placeholders::_1))
+      10, std::bind(&Drive_and_Steer::joy_callback, this, std::placeholders::_1));
     wheel_speed_sub = create_subscription<std_msgs::msg::Float64>(
       "wheel_speed",
-      10, std::bind(&Drive_and_Steer::wheel_speed_callback, this, std::placeholders::_1))
+      10, std::bind(&Drive_and_Steer::wheel_speed_callback, this, std::placeholders::_1));
 
     // Main timer
     int cycle_time = 1000.0 / loop_rate;
@@ -93,6 +85,8 @@ private:
   /// \brief The main timer callback, publishes servo commands for the drive and steering
   void timer_callback()
   {
+    std_msgs::msg::Int32 drive_msg, steer_msg;
+
     // Adding servo commands to message
     drive_msg.data = drive_cmd;
     steer_msg.data = steer_cmd;
@@ -101,7 +95,7 @@ private:
     drive_cmd_pub->publish(drive_msg);
     steering_cmd_pub->publish(steer_msg);
 
-    RCLCPP_INFO(this->get_logger(), "REV COUNTER: %f RPM", (motor_speed * 60 / (2 * 3.1415926)));
+    //RCLCPP_INFO(this->get_logger(), "REV COUNTER: %f RPM", (motor_speed * 60 / (2 * 3.1415926)));
   }
 
   /// \brief The joystick callback function, calculates servo commands from the controller inputs
@@ -110,17 +104,17 @@ private:
     double fwd_input, rev_input, steer_input, drive_input;
 
     // Get drive and steeing inputs from controller
-    fwd_input = msg.axes[5]
-    rev_input = msg.axes[4]
-    steer_input = msg.axes[0]
+    fwd_input = msg.axes[5];
+    rev_input = msg.axes[2];
+    steer_input = msg.axes[0];
 
     // Only use reverse command if drive is not pressed
-    if (fwd_input==1.0) {
+    if (fwd_input==1.0 && rev_input!=1.0) {
         drive_input = rev_input - 1.0;
     } else {
-        drive_input = fwd_input + 1.0;
+        drive_input = -fwd_input + 1.0;
     }
-
+    RCLCPP_INFO(this->get_logger(), "drive_input: %f ", drive_input);
     // Publish commands
     drive_cmd = ((drive_input + 2.0) / 4.0) * (cmd_max - cmd_min) + cmd_min;
     steer_cmd = ((steer_input + 2.0) / 4.0) * (cmd_max - cmd_min) + cmd_min;

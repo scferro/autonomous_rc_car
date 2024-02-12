@@ -17,13 +17,14 @@
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/int32.hpp"
 
 using namespace std::chrono_literals;
 
 class Control_Servos : public rclcpp::Node
 {
 public:
-  Control_servos()
+  Control_Servos()
   : Node("control_servos")
   {
     // Parameters and default values
@@ -50,7 +51,7 @@ public:
     steering_cmd_sub = create_subscription<std_msgs::msg::Int32>(
       "steering_cmd",
       10, std::bind(&Control_Servos::steering_cmd_callback, this, std::placeholders::_1));
-    drive_cmd = create_subscription<std_msgs::msg::Int32>(
+    drive_cmd_sub = create_subscription<std_msgs::msg::Int32>(
       "drive_cmd",
       10, std::bind(&Control_Servos::drive_cmd_callback, this, std::placeholders::_1));
 
@@ -71,7 +72,7 @@ private:
 
   // Initialize subscriptions and timer
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr steering_cmd_sub;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr drive_cmd;
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr drive_cmd_sub;
   rclcpp::TimerBase::SharedPtr main_timer;
 
   /// \brief The main timer callback, updates diff_drive state and publishes odom messages
@@ -93,7 +94,7 @@ private:
   }
 
   /// \brief The steering_cmd callback function, updates the steering command
-  void steering_cmd_callback(const sensor_msgs::msg::JointState & msg)
+  void steering_cmd_callback(const std_msgs::msg::Int32 & msg)
   {
     rclcpp::Time time;
     steering_cmd = msg.data;
@@ -103,7 +104,7 @@ private:
   }
 
   /// \brief The drive_cmd callback function, updates the drive motor command
-  void drive_cmd_callback(const sensor_msgs::msg::JointState & msg)
+  void drive_cmd_callback(const std_msgs::msg::Int32 & msg)
   {
     rclcpp::Time time;
     drive_cmd = msg.data;
@@ -120,7 +121,7 @@ private:
     // Contrain the command to the valid range
     if (cmd < 0) {
         cmd = 0;
-    } elif (cmd > cmd_max) {
+    } else if (cmd > cmd_max) {
         cmd = cmd_max;
     }
     // Return the constrained command
@@ -128,12 +129,10 @@ private:
   }
 };
 
-
-
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<Read_Encoder>();
+  auto node = std::make_shared<Control_Servos>();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
