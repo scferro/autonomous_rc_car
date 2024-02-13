@@ -10,7 +10,7 @@
 ///     steering_cmd (std_msgs::msg::Int32): the command for the steering servo
 ///     drive_cmd (std_msgs::msg::Int32): the command for the drive motor ESC
 /// CLIENTS:
-///     mode (car_control::srv::Mode): sets the current mode of the car based on button inputs
+///     mode (rc_car_interfaces::srv::SetMode): sets the current mode of the car based on button inputs
 
 #include <chrono>
 #include <memory>
@@ -22,7 +22,7 @@
 #include "std_msgs/msg/int32.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/float64.hpp"
-#include "car_control/srv/mode.hpp"
+#include "rc_car_interfaces/srv/set_mode.hpp"
 
 // Used ChatGPT for debugging
 // Refer to Citation [5] ChatGPT
@@ -37,8 +37,8 @@ public:
   {
     // Parameters and default values
     declare_parameter("loop_rate", 50.);
-    declare_parameter("cmd_max", 180);
-    declare_parameter("cmd_min", 0);
+    declare_parameter("cmd_max", 2000);
+    declare_parameter("cmd_min", 1000);
     declare_parameter("gear_ratio", 5.);
     
     // Define parameter variables
@@ -65,7 +65,7 @@ public:
       10, std::bind(&Drive_and_Steer::wheel_speed_callback, this, std::placeholders::_1));
 
     // Clients
-    mode_cli = create_client<car_control::srv::Mode>("mode");
+    //mode_cli = create_client<rc_car_interfaces::srv::SetMode>("set_mode");
 
     // Main timer
     int cycle_time = 1000.0 / loop_rate;
@@ -86,7 +86,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr wheel_speed_sub;
-  rclcpp::Client<car_control::srv::Mode>::SharedPtr mode_cli;
+  //rclcpp::Client<rc_car_interfaces::srv::SetMode>::SharedPtr mode_cli;
   rclcpp::TimerBase::SharedPtr main_timer;
 
   /// \brief The main timer callback, publishes servo commands for the drive and steering
@@ -110,7 +110,7 @@ private:
   {
     double fwd_input, rev_input, steer_input, drive_input;
     int mode_in = 0;
-    car_control::srv::Mode request;
+    auto mode_request = std::make_shared<rc_car_interfaces::srv::SetMode::Request>();
 
     // Get drive and steeing inputs from controller
     fwd_input = msg.axes[5];
@@ -130,23 +130,26 @@ private:
 
     // Check if mode buttons are pressed
     if (msg.buttons[0]==1) {
-      request.mode = 0;
+      mode_request->data = 0;
       mode_in = 1;
     } else if (msg.buttons[1]==1) {
-      request.mode = 1;
+      mode_request->data = 1;
       mode_in = 1;
     } else if (msg.buttons[2]==1) {
-      request.mode = 2;
+      mode_request->data = 2;
       mode_in = 1;
     } else if (msg.buttons[3]==1) {
-      request.mode = 3;
+      mode_request->data = 3;
       mode_in = 1;
     }
 
-    // If mode button pressed, change mode
-    if (mode_in==1) {
-      auto result = client->async_send_request(request);
-    }
+    // // If mode button pressed, change mode
+    // if (mode_in==1) {
+    //   while (!mode_cli->wait_for_service(1s)) {
+    //     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for set_mode service...");
+    //   }
+    //   auto result = mode_cli->async_send_request(mode_request);
+    // }
   }
 
   /// \brief The wheel_speed callback function, stores the current wheel speed reported by the encoder

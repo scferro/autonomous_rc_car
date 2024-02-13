@@ -15,11 +15,8 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(rc_car_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-
-rosidl_generate_interfaces(${PROJECT_NAME}_srv
-  "srv/Mode.srv"
-)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -43,10 +40,10 @@ add_executable(drive_and_steer src/drive_and_steer.cpp)
 ament_target_dependencies(drive_and_steer rclcpp std_msgs geometry_msgs)
 
 add_executable(controller_interface src/controller_interface.cpp)
-ament_target_dependencies(controller_interface rclcpp std_msgs sensor_msgs)
+ament_target_dependencies(controller_interface rclcpp std_msgs sensor_msgs rc_car_interfaces)
 
 add_executable(mode_node src/mode_node.cpp)
-ament_target_dependencies(mode_node rclcpp std_msgs)
+ament_target_dependencies(mode_node rclcpp std_msgs rc_car_interfaces)
 
 install(TARGETS
   read_encoder
@@ -55,11 +52,6 @@ install(TARGETS
   controller_interface
   mode_node
   DESTINATION lib/${PROJECT_NAME}
-)
-
-install(DIRECTORY
-  srv
-  DESTINATION share/${PROJECT_NAME}/
 )
 
 ament_package()

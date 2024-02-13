@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>car_control</name>
+  <name>rc_car_interfaces</name>
   <version>0.0.0</version>
-  <description>A package for low level control of the autonomous RC car</description>
-  <maintainer email="stephencferro@gmail.com">scferro</maintainer>
+  <description>TODO: Package description</description>
+  <maintainer email="scferro@todo.todo">scferro</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
@@ -12,13 +12,11 @@
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
-  <exec_depend>ros2launch</exec_depend>
-
   <depend>rclcpp</depend>
-  <depend>geometry_msgs</depend>
-  <depend>sensor_msgs</depend>
-  <depend>rc_car_interfaces</depend>
-  
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

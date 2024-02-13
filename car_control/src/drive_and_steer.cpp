@@ -39,8 +39,8 @@ public:
   {
     // Parameters and default values
     declare_parameter("loop_rate", 100.);
-    declare_parameter("cmd_max", 180);
-    declare_parameter("cmd_min", 0);
+    declare_parameter("cmd_max", 2000);
+    declare_parameter("cmd_min", 1000);
     declare_parameter("use_wheel_speed", false);
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("timeout", 1.);

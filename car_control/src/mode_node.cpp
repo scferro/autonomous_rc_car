@@ -8,7 +8,7 @@
 /// PUBLISHES:
 ///     mode (std_msgs::msg::Int32): the current mode
 /// SERVERS:
-///     mode (car_control::srv::Mode): sets the current mode of the car
+///     mode (rc_car_interfaces::srv::SetMode): sets the current mode of the car
 
 /// DESCRIPTION OF MODES
 /// NUMBER   COLOR   FUNCTION
@@ -26,7 +26,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/int32.hpp"
-#include "car_control/srv/mode.hpp"
+#include "rc_car_interfaces/srv/set_mode.hpp"
 
 using namespace std::chrono_literals;
 
@@ -43,18 +43,17 @@ public:
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
-    mode = get_parameter("initial_mode").as_int();
+    initial_mode = get_parameter("initial_mode").as_int();
     mode = get_parameter("max_mode").as_int();
 
     // Define other variables
-    wheel_speed = 0.0;
 
     // Publishers
     mode_pub = create_publisher<std_msgs::msg::Int32>("wheel_speed", 10);
 
     // Services
-    mode_srv = create_service<car_control::srv::Mode>(
-      "mode",
+    mode_srv = create_service<rc_car_interfaces::srv::SetMode>(
+      "set_mode",
       std::bind(
         &Mode_Node::mode_srv_callback, this, std::placeholders::_1,
         std::placeholders::_2));
@@ -69,11 +68,12 @@ public:
 private:
   // Initialize parameter variables
   int rate;
-  double loop_rate, mode, max_mode;
+  double loop_rate;
+  int mode, max_mode, initial_mode;
 
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr mode_pub;
   rclcpp::TimerBase::SharedPtr main_timer;
-  rclcpp::Service<car_control::srv::Mode>::SharedPtr mode_srv;
+  rclcpp::Service<rc_car_interfaces::srv::SetMode>::SharedPtr mode_srv;
 
   /// \brief The main timer callback, updates diff_drive state and publishes odom messages
   void timer_callback()
@@ -88,13 +88,13 @@ private:
   /// \brief Set the current mode of the robot
   /// \param request The desired mode of the robot
   void mode_srv_callback(
-    nuturtle_control::srv::Pose::Request::SharedPtr request,
-    nuturtle_control::srv::Pose::Response::SharedPtr)
+    rc_car_interfaces::srv::SetMode::Request::SharedPtr request,
+    rc_car_interfaces::srv::SetMode::Response::SharedPtr)
   {
     // Extract desired x, y, theta
-    mode = request.mode;
+    mode = request->data;
 
-    if (mode > max_mode) || mode < 0 {
+    if ((mode > max_mode) || (mode < 0)) {
         mode = initial_mode;
         RCLCPP_INFO(this->get_logger(), "Mode request invalid. Reset to MODE %i", mode);
     } else {
