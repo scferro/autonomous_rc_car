@@ -13,19 +13,12 @@
 ///     mode (rc_car_interfaces::srv::SetMode): sets the current mode of the car based on button inputs
 
 #include <chrono>
-#include <memory>
-#include <string>
-#include <random>
-#include <vector>
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/int32.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "rc_car_interfaces/srv/set_mode.hpp"
-
-// Used ChatGPT for debugging
-// Refer to Citation [5] ChatGPT
 
 using namespace std::chrono_literals;
 
@@ -49,6 +42,8 @@ public:
 
     // Define other variables
     cmd_neutral = (cmd_min + cmd_max) / 2;
+    drive_cmd = cmd_neutral;
+    steer_cmd = cmd_neutral;
     wheel_speed = 0.;
     motor_speed = 0.;
 
@@ -109,8 +104,8 @@ private:
   void joy_callback(const sensor_msgs::msg::Joy & msg)
   {
     double fwd_input, rev_input, steer_input, drive_input;
-    int mode_in = 0;
-    auto mode_request = std::make_shared<rc_car_interfaces::srv::SetMode::Request>();
+    //int mode_in = 0;
+    //auto mode_request = std::make_shared<rc_car_interfaces::srv::SetMode::Request>();
 
     // Get drive and steeing inputs from controller
     fwd_input = msg.axes[5];
@@ -129,19 +124,19 @@ private:
     steer_cmd = ((steer_input + 2.0) / 4.0) * (cmd_max - cmd_min) + cmd_min;
 
     // Check if mode buttons are pressed
-    if (msg.buttons[0]==1) {
-      mode_request->data = 0;
-      mode_in = 1;
-    } else if (msg.buttons[1]==1) {
-      mode_request->data = 1;
-      mode_in = 1;
-    } else if (msg.buttons[2]==1) {
-      mode_request->data = 2;
-      mode_in = 1;
-    } else if (msg.buttons[3]==1) {
-      mode_request->data = 3;
-      mode_in = 1;
-    }
+    // if (msg.buttons[0]==1) {
+    //   mode_request->data = 0;
+    //   mode_in = 1;
+    // } else if (msg.buttons[1]==1) {
+    //   mode_request->data = 1;
+    //   mode_in = 1;
+    // } else if (msg.buttons[2]==1) {
+    //   mode_request->data = 2;
+    //   mode_in = 1;
+    // } else if (msg.buttons[3]==1) {
+    //   mode_request->data = 3;
+    //   mode_in = 1;
+    // }
 
     // // If mode button pressed, change mode
     // if (mode_in==1) {
