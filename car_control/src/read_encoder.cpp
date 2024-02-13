@@ -34,7 +34,7 @@ public:
         // Open SPI device
         fd = open(spiDevice.c_str(), O_RDWR);
         if (fd < 0) {
-            std::cerr << "Can't open device." << std::endl;
+            //RCLCPP_INFO(this->get_logger(), "Can't open device.");
             return;
         }
 
@@ -70,7 +70,7 @@ public:
         };
 
         if (ioctl(fd, SPI_IOC_MESSAGE(1), &tr) < 1) {
-            std::cerr << "Can't send spi message" << std::endl;
+            //RCLCPP_INFO(this->get_logger(), "Can't send spi message.");
             return 0;
         }
 

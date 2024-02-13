@@ -1,0 +1,37 @@
+<launch>
+
+    <!-- Arguments -->
+    <arg name="use_rviz" default="true"/>
+    <arg name="on_robot" default="true"/>
+    <arg name="use_controller" default="true"/>
+
+    <!-- Launch URDF launch file. Use RViz if use_rviz==true -->
+    <include file="$(find-pkg-share rviz_description)/launch/car_rviz.launch.py">
+        <arg name="use_rviz" value="$(var use_rviz)" />
+        <arg name="use_jsp" value="jsp" />
+    </include>
+
+    <!-- Launch control_servos node if on_robot==true -->
+    <node pkg="car_control" exec="control_servos" if="$(eval '\'$(var on_robot)\' == \'true\'')">
+    </node>
+
+    <!-- Launch read_encoder node if on_robot==true -->
+    <node pkg="car_control" exec="read_encoder" if="$(eval '\'$(var on_robot)\' == \'true\'')">
+    </node>
+    
+    <!-- Launch controller_interface node if use_controller==true -->
+    <node pkg="car_control" exec="controller_interface" if="$(eval '\'$(var use_controller)\' == \'true\'')">
+    </node>
+
+    <!-- Launch joy node if use_controller==true -->
+    <node pkg="joy" exec="joy_node" if="$(eval '\'$(var use_controller)\' == \'true\'')">
+    </node>
+
+    <!-- Launch drive_and_steer node -->
+    <node pkg="car_control" exec="drive_and_steer">
+    </node>
+    
+    <!-- Publish a static TF between the odom and world frames-->
+    <node pkg="tf2_ros" exec="static_transform_publisher" args="0 0 0 0 0 0 1 /map /odom"/>
+
+</launch>

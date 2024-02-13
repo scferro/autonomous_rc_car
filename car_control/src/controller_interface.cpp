@@ -22,11 +22,11 @@
 
 using namespace std::chrono_literals;
 
-class Drive_and_Steer : public rclcpp::Node
+class Controller_Interface : public rclcpp::Node
 {
 public:
-  Drive_and_Steer()
-  : Node("drive_and_steer")
+  Controller_Interface()
+  : Node("controller_interface")
   {
     // Parameters and default values
     declare_parameter("loop_rate", 50.);
@@ -54,10 +54,10 @@ public:
     // Subscribers
     joy_sub = create_subscription<sensor_msgs::msg::Joy>(
       "joy",
-      10, std::bind(&Drive_and_Steer::joy_callback, this, std::placeholders::_1));
+      10, std::bind(&Controller_Interface::joy_callback, this, std::placeholders::_1));
     wheel_speed_sub = create_subscription<std_msgs::msg::Float64>(
       "wheel_speed",
-      10, std::bind(&Drive_and_Steer::wheel_speed_callback, this, std::placeholders::_1));
+      10, std::bind(&Controller_Interface::wheel_speed_callback, this, std::placeholders::_1));
 
     // Clients
     //mode_cli = create_client<rc_car_interfaces::srv::SetMode>("set_mode");
@@ -66,7 +66,7 @@ public:
     int cycle_time = 1000.0 / loop_rate;
     main_timer = this->create_wall_timer(
       std::chrono::milliseconds(cycle_time),
-      std::bind(&Drive_and_Steer::timer_callback, this));
+      std::bind(&Controller_Interface::timer_callback, this));
   }
 
 private:
@@ -169,7 +169,7 @@ private:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<Drive_and_Steer>();
+  auto node = std::make_shared<Controller_Interface>();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
