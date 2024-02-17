@@ -1,4 +1,4 @@
-# rc_racecar - MSR Winter Project
+# autonomous_rc_car - MSR Winter Project
 
 ## Package List
 - rviz_description: The URDF description of the robot
