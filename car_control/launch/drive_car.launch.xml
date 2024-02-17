@@ -1,7 +1,7 @@
 <launch>
 
     <!-- Arguments -->
-    <arg name="use_rviz" default="true"/>
+    <arg name="use_rviz" default="false"/>
     <arg name="on_robot" default="true"/>
     <arg name="use_controller" default="true"/>
 
@@ -15,8 +15,8 @@
     <node pkg="car_control" exec="control_servos" if="$(eval '\'$(var on_robot)\' == \'true\'')">
     </node>
 
-    <!-- Launch read_encoder node if on_robot==true -->
-    <node pkg="car_control" exec="read_encoder" if="$(eval '\'$(var on_robot)\' == \'true\'')">
+    <!-- Launch odometry node if on_robot==true -->
+    <node pkg="car_control" exec="odometry" if="$(eval '\'$(var on_robot)\' == \'true\'')">
     </node>
     
     <!-- Launch controller_interface node if use_controller==true -->
@@ -25,10 +25,6 @@
 
     <!-- Launch joy node if use_controller==true -->
     <node pkg="joy" exec="joy_node" if="$(eval '\'$(var use_controller)\' == \'true\'')">
-    </node>
-
-    <!-- Launch drive_and_steer node -->
-    <node pkg="car_control" exec="drive_and_steer">
     </node>
     
     <!-- Publish a static TF between the odom and world frames-->

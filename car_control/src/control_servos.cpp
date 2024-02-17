@@ -8,7 +8,8 @@
 /// SUBSCRIBES:
 ///     steering_cmd (std_msgs::msg::Int32): the command for the steering servo
 ///     drive_cmd (std_msgs::msg::Int32): the command for the drive motor ESC
-///     mode (std_msgs::msg::Int32): the current mode
+/// SERVERS:
+///     enable_drive (std_srvs::srv::SetBool): enables/disables drive motor
 
 #include <chrono>
 #include <memory>
@@ -26,6 +27,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/int32.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 
 using namespace std::chrono_literals;
 
@@ -102,6 +104,7 @@ public:
     declare_parameter("timeout", 1.);
     declare_parameter("steer_left_max", 1700);
     declare_parameter("steer_right_max", 1300);
+    declare_parameter("enable_drive", true);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
@@ -110,6 +113,7 @@ public:
     timeout = get_parameter("timeout").as_double();
     steer_left_max = get_parameter("steer_left_max").as_int();
     steer_right_max = get_parameter("steer_right_max").as_int();
+    enable_drive = get_parameter("enable_drive").as_bool();
 
     // Define other variables
     default_steering_cmd = (steer_left_max + steer_right_max / 2);
@@ -120,7 +124,7 @@ public:
     time_now = now.seconds() + (now.nanoseconds() * 0.000000001);
     time_last_steer = time_now;
     time_last_drive = time_now;
-    mode = 0;
+    enable_drive = true;
 
     // Subscribers
     steering_cmd_sub = create_subscription<std_msgs::msg::Int32>(
@@ -129,9 +133,11 @@ public:
     drive_cmd_sub = create_subscription<std_msgs::msg::Int32>(
       "drive_cmd",
       10, std::bind(&Control_Servos::drive_cmd_callback, this, std::placeholders::_1));
-    mode_sub = create_subscription<std_msgs::msg::Int32>(
-      "mode",
-      10, std::bind(&Control_Servos::mode_callback, this, std::placeholders::_1));
+
+    // Servers
+    enable_drive_srv = create_service<std_srvs::srv::SetBool>(
+      "enable_drive",
+      std::bind(&Control_Servos::enable_drive_callback, this, std::placeholders::_1, std::placeholders::_2));
 
     // Main timer
     int cycle_time = 1000.0 / loop_rate;
@@ -167,16 +173,16 @@ private:
   double loop_rate, timeout;
   int cmd_max, cmd_min, steering_cmd, drive_cmd, default_steering_cmd, default_drive_cmd;
   double time_now, time_last_steer, time_last_drive;
-  int mode, steer_left_max, steer_right_max;
+  int steer_left_max, steer_right_max;
   rclcpp::Time now;
   const char *device;
-  int fd;
-  int pwm;
+  int fd, pwm;
+  bool enable_drive;
 
   // Initialize subscriptions and timer
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr steering_cmd_sub;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr drive_cmd_sub;
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr mode_sub;
+  rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enable_drive_srv;
   rclcpp::TimerBase::SharedPtr main_timer;
 
   /// \brief The main timer callback, updates diff_drive state and publishes odom messages
@@ -192,14 +198,12 @@ private:
       drive_cmd = default_drive_cmd;
     }
 
-    // If in MODE 1, reset commands to neutral
-    if (mode==1) {
-      RCLCPP_INFO(this->get_logger(), "MODE 1: Robot stopped.");
-      steering_cmd = default_steering_cmd;
+    // If in enable_drive is set to false, reset drive command to neutral
+    if (enable_drive==false) {
       drive_cmd = default_drive_cmd;
     }
 
-    // Publish servo commands
+    // Write servo commands
     setPWM(fd, 0, 0, convert_microsec(drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
     setPWM(fd, 1, 0, convert_microsec(steering_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
   }
@@ -239,13 +243,7 @@ private:
     return cmd;
   }
 
-  /// \brief Changes the mode
-  void mode_callback(const std_msgs::msg::Int32 & msg)
-  {
-    mode = msg.data;
-  }
-
-  /// \brief ESC startup
+  /// \brief ESC startup, sends a pulse of servo commands at startup to initialize ESC
   void motor_startup()
   {
     int step, microsec, microsec_max, microsec_min;
@@ -253,6 +251,7 @@ private:
     microsec_min = 1500;
     microsec_max = 1700;
     microsec = microsec_min;
+
     while (microsec >= microsec_min) {
         microsec += step;
         if (microsec==microsec_max) {
@@ -262,6 +261,25 @@ private:
         setPWM(fd, 0, 0, pwm);
         setPWM(fd, 1, 0, pwm);
         delayMicroseconds(50000);
+    }
+
+    // Set servo commands to neutral after startup
+    pwm = convert_microsec(1500);
+    setPWM(fd, 0, 0, pwm);
+    setPWM(fd, 1, 0, pwm);
+  }
+
+  /// \brief Callback for the enable drive server, enables/disables motors
+  void enable_drive_callback(
+    std_srvs::srv::SetBool::Request::SharedPtr request,
+    std_srvs::srv::SetBool::Response::SharedPtr)
+  {
+    if (request->data==true) {
+      RCLCPP_INFO(this->get_logger(), "Enabling drive motor.");
+      enable_drive = true;
+    } else {
+      RCLCPP_INFO(this->get_logger(), "Disabling drive motor.");
+      enable_drive = false;
     }
   }
 };

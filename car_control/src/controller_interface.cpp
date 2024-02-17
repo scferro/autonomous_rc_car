@@ -9,16 +9,16 @@
 /// PUBLISHES:
 ///     steering_cmd (std_msgs::msg::Int32): the command for the steering servo
 ///     drive_cmd (std_msgs::msg::Int32): the command for the drive motor ESC
+/// SERVERS:
+///     enable_controller (std_srvs::srv::SetBool): enables/disables sending servo commands from the controller interface node
 /// CLIENTS:
-///     mode (rc_car_interfaces::srv::SetMode): sets the current mode of the car based on button inputs
-
-#include <chrono>
+///     enable_drive (std_srvs::srv::SetBool): enables/disbales drive
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/int32.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/float64.hpp"
-#include "rc_car_interfaces/srv/set_mode.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 
 using namespace std::chrono_literals;
 
@@ -33,12 +33,14 @@ public:
     declare_parameter("cmd_max", 2000);
     declare_parameter("cmd_min", 1000);
     declare_parameter("gear_ratio", 5.);
+    declare_parameter("enable_controller", true);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
     cmd_max = get_parameter("cmd_max").as_int();
     cmd_min = get_parameter("cmd_min").as_int();
     gear_ratio = get_parameter("gear_ratio").as_double();
+    enable_controller = get_parameter("enable_controller").as_bool();
 
     // Define other variables
     cmd_neutral = (cmd_min + cmd_max) / 2;
@@ -59,8 +61,13 @@ public:
       "wheel_speed",
       10, std::bind(&Controller_Interface::wheel_speed_callback, this, std::placeholders::_1));
 
+    // Servers
+    enable_controller_srv = create_service<std_srvs::srv::SetBool>(
+      "enable_controller",
+      std::bind(&Controller_Interface::enable_controller_callback, this, std::placeholders::_1, std::placeholders::_2));
+
     // Clients
-    //mode_cli = create_client<rc_car_interfaces::srv::SetMode>("set_mode");
+    enable_drive_cli = create_client<std_srvs::srv::SetBool>("enable_drive");
 
     // Main timer
     int cycle_time = 1000.0 / loop_rate;
@@ -75,13 +82,15 @@ private:
   int loop_rate, cmd_max, cmd_min, cmd_neutral;
   int drive_cmd, steer_cmd;
   double wheel_speed, gear_ratio, motor_speed;
+  bool enable_controller;
   
   // Create ROS publishers, timers, broadcasters, etc.
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr steering_cmd_pub;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr wheel_speed_sub;
-  //rclcpp::Client<rc_car_interfaces::srv::SetMode>::SharedPtr mode_cli;
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_drive_cli;
+  rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enable_controller_srv;
   rclcpp::TimerBase::SharedPtr main_timer;
 
   /// \brief The main timer callback, publishes servo commands for the drive and steering
@@ -93,9 +102,11 @@ private:
     drive_msg.data = drive_cmd;
     steer_msg.data = steer_cmd;
     
-    // Publish command messages
-    drive_cmd_pub->publish(drive_msg);
-    steering_cmd_pub->publish(steer_msg);
+    // Publish command messages if enable_controller is set to true
+    if (enable_controller==true){
+      drive_cmd_pub->publish(drive_msg);
+      steering_cmd_pub->publish(steer_msg);
+    }
 
     //RCLCPP_INFO(this->get_logger(), "REV COUNTER: %f RPM", (motor_speed * 60 / (2 * 3.1415926)));
   }
@@ -104,8 +115,8 @@ private:
   void joy_callback(const sensor_msgs::msg::Joy & msg)
   {
     double fwd_input, rev_input, steer_input, drive_input;
-    //int mode_in = 0;
-    //auto mode_request = std::make_shared<rc_car_interfaces::srv::SetMode::Request>();
+    bool enable_drive_cmd;
+    auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
 
     // Get drive and steeing inputs from controller
     fwd_input = msg.axes[5];
@@ -119,32 +130,39 @@ private:
         drive_input = -fwd_input + 1.0;
     }
     
-    // Publish commands
+    // Scale and store command values
     drive_cmd = ((drive_input + 2.0) / 4.0) * (cmd_max - cmd_min) + cmd_min;
     steer_cmd = ((steer_input + 2.0) / 4.0) * (cmd_max - cmd_min) + cmd_min;
 
-    // Check if mode buttons are pressed
-    // if (msg.buttons[0]==1) {
-    //   mode_request->data = 0;
-    //   mode_in = 1;
-    // } else if (msg.buttons[1]==1) {
-    //   mode_request->data = 1;
-    //   mode_in = 1;
-    // } else if (msg.buttons[2]==1) {
-    //   mode_request->data = 2;
-    //   mode_in = 1;
-    // } else if (msg.buttons[3]==1) {
-    //   mode_request->data = 3;
-    //   mode_in = 1;
-    // }
+    // Check if enable_drive buttons are pressed
+    if (msg.buttons[0]==1) {
+      request->data = true;
+      enable_drive_cmd = true;
+      RCLCPP_INFO(this->get_logger(), "Enabling drive motor.");
+    } else if (msg.buttons[1]==1) {
+      request->data = false;
+      enable_drive_cmd = true;
+      RCLCPP_INFO(this->get_logger(), "Disabling drive motor.");
+    }
 
-    // // If mode button pressed, change mode
-    // if (mode_in==1) {
-    //   while (!mode_cli->wait_for_service(1s)) {
-    //     RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for set_mode service...");
-    //   }
-    //   auto result = mode_cli->async_send_request(mode_request);
-    // }
+    // If mode button pressed, change disable drive
+    if (enable_drive_cmd==true) {
+      int count = 0;
+      while ((!enable_drive_cli->wait_for_service(1s)) && (count < 5)) {
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for enable_drive service...");
+        count++;
+      }
+      auto result = enable_drive_cli->async_send_request(request);
+    }
+
+    // Check if enable_controller buttons are pressed
+    if (msg.buttons[5]==1) {
+      RCLCPP_INFO(this->get_logger(), "Enabling controller.");
+      enable_controller = true;
+    } else if (msg.buttons[4]==1) {
+      RCLCPP_INFO(this->get_logger(), "Disabling controller.");
+      enable_controller = false;
+    }
   }
 
   /// \brief The wheel_speed callback function, stores the current wheel speed reported by the encoder
@@ -163,6 +181,20 @@ private:
       cmd = cmd_min;
     }
     return cmd;
+  }
+
+  /// \brief Callback for the enable drive server, enables/disables motors
+  void enable_controller_callback(
+    std_srvs::srv::SetBool::Request::SharedPtr request,
+    std_srvs::srv::SetBool::Response::SharedPtr)
+  {
+    if (request->data==true) {
+      RCLCPP_INFO(this->get_logger(), "Enabling controller.");
+      enable_controller = true;
+    } else {
+      RCLCPP_INFO(this->get_logger(), "Disabling controller.");
+      enable_controller = false;
+    }
   }
 };
 

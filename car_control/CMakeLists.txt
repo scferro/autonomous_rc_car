@@ -15,7 +15,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(rc_car_interfaces REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 if(BUILD_TESTING)
@@ -30,27 +30,23 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-add_executable(read_encoder src/read_encoder.cpp)
-ament_target_dependencies(read_encoder rclcpp std_msgs)
-
 add_executable(control_servos src/control_servos.cpp)
-ament_target_dependencies(control_servos rclcpp std_msgs)
+ament_target_dependencies(control_servos rclcpp std_msgs std_srvs)
 
-add_executable(drive_and_steer src/drive_and_steer.cpp)
-ament_target_dependencies(drive_and_steer rclcpp std_msgs geometry_msgs)
+add_executable(steering_control src/steering_control.cpp)
+ament_target_dependencies(steering_control rclcpp std_msgs geometry_msgs nav_msgs)
 
 add_executable(controller_interface src/controller_interface.cpp)
-ament_target_dependencies(controller_interface rclcpp std_msgs sensor_msgs rc_car_interfaces)
+ament_target_dependencies(controller_interface rclcpp std_msgs sensor_msgs std_srvs)
 
-add_executable(mode_node src/mode_node.cpp)
-ament_target_dependencies(mode_node rclcpp std_msgs rc_car_interfaces)
+add_executable(odometry src/odometry.cpp)
+ament_target_dependencies(odometry rclcpp geometry_msgs sensor_msgs nav_msgs)
 
 install(TARGETS
-  read_encoder
   control_servos
-  drive_and_steer
+  steering_control
   controller_interface
-  mode_node
+  odometry
   DESTINATION lib/${PROJECT_NAME}
 )
 

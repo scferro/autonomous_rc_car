@@ -4,6 +4,7 @@
         "array": "cpp",
         "string": "cpp",
         "string_view": "cpp",
-        "mode_node": "cpp"
+        "mode_node": "cpp",
+        "imu_processing": "cpp"
     }
 }
