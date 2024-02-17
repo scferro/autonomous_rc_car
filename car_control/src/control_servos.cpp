@@ -159,12 +159,11 @@ public:
 
     initPCA9685(fd);
 
-    // Example: Set channel 0 to a specific PWM
-    // Adjust the on and off values according to your servo specifications
-    setPWM(fd, 0, 0, convert_microsec(1500)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
-    setPWM(fd, 1, 0, convert_microsec(1500)); // 307 corresponds to approximately 1.5ms pulse width at 50H
-
     motor_startup();
+
+    // Set motor commands to neutral
+    setPWM(fd, 0, 0, convert_microsec(default_drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
+    setPWM(fd, 1, 0, convert_microsec(default_steering_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50H
   }
 
 private:
@@ -262,11 +261,6 @@ private:
         setPWM(fd, 1, 0, pwm);
         delayMicroseconds(50000);
     }
-
-    // Set servo commands to neutral after startup
-    pwm = convert_microsec(1500);
-    setPWM(fd, 0, 0, pwm);
-    setPWM(fd, 1, 0, pwm);
   }
 
   /// \brief Callback for the enable drive server, enables/disables motors
