@@ -120,6 +120,9 @@ private:
     
     // Publish command messages
     steering_cmd_pub->publish(steer_msg);
+
+    RCLCPP_INFO(this->get_logger(), "steer_cmd: %f", steer_cmd);
+    RCLCPP_INFO(this->get_logger(), "angular_vel_cmd: %f", angular_vel_cmd);
   }
 
   /// \brief The cmd_vel callback function, extracts angular velocity command
