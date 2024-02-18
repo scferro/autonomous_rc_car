@@ -222,9 +222,9 @@ private:
 
     // Constrain command to valid range
     if (msg.data > steer_left_max) {
-      steering_cmd = cmd_max;
+      steering_cmd = steer_left_max;
     } else if (msg.data < steer_right_max) {
-      steering_cmd = cmd_min;
+      steering_cmd = steer_right_max;
     } else {
       steering_cmd = msg.data;
     }
