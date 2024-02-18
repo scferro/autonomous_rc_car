@@ -244,7 +244,7 @@ private:
     } else if (msg.data < cmd_min) {
       drive_cmd = cmd_min;
     } else {
-      steering_cmd = msg.data;
+      drive_cmd = msg.data;
     }
 
     // Get time

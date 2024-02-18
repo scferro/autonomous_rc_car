@@ -21,4 +21,9 @@
     <node pkg="car_control" exec="steering_control">
     </node>
 
+    <!-- Launch steering_test node -->
+    <node pkg="car_control" exec="steering_test">
+    </node>
+
+
 </launch>
