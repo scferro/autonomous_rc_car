@@ -196,11 +196,11 @@ private:
     time_now = now.seconds() + (now.nanoseconds() * 0.000000001);
 
     // Check if steering and drive commands received within before timeout
-    if (((time_now - time_last_steer) > timeout) || ((time_now - time_last_drive) > timeout)) {
-      RCLCPP_DEBUG(this->get_logger(), "Either no steering or no drive command received within last %f seconds. Timeout.", timeout);
-      steering_cmd = default_steering_cmd;
-      drive_cmd = default_drive_cmd;
-    }
+    // if (((time_now - time_last_steer) > timeout) || ((time_now - time_last_drive) > timeout)) {
+    //   RCLCPP_DEBUG(this->get_logger(), "Either no steering or no drive command received within last %f seconds. Timeout.", timeout);
+    //   steering_cmd = default_steering_cmd;
+    //   drive_cmd = default_drive_cmd;
+    // }
 
     // If in enable_drive is set to false, reset drive command to neutral
     if (enable_drive==false) {
@@ -219,13 +219,14 @@ private:
   void steering_cmd_callback(const std_msgs::msg::Int32 & msg)
   {
     rclcpp::Time time;
-    steering_cmd = msg.data;
 
     // Constrain command to valid range
-    if (steering_cmd > steer_left_max) {
+    if (msg.data > steer_left_max) {
       steering_cmd = cmd_max;
-    } else if (drive_cmd < steer_right_max) {
+    } else if (msg.data < steer_right_max) {
       steering_cmd = cmd_min;
+    } else {
+      steering_cmd = msg.data;
     }
 
     time = this->get_clock()->now();
@@ -236,13 +237,14 @@ private:
   void drive_cmd_callback(const std_msgs::msg::Int32 & msg)
   {
     rclcpp::Time time;
-    drive_cmd = msg.data;
 
     // Constrain command to valid range
-    if (drive_cmd > cmd_max) {
+    if (msg.data > cmd_max) {
       drive_cmd = cmd_max;
-    } else if (drive_cmd < cmd_min) {
+    } else if (msg.data < cmd_min) {
       drive_cmd = cmd_min;
+    } else {
+      steering_cmd = msg.data;
     }
 
     // Get time

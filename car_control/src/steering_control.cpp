@@ -40,7 +40,7 @@ public:
     declare_parameter("cmd_min", 1000);
     declare_parameter("use_wheel_speed", false);
     declare_parameter("wheel_diameter", 0.108);
-    declare_parameter("P", 500.0);
+    declare_parameter("P", 100.0);
     declare_parameter("I", 0.0);
     declare_parameter("D", 0.0);
     
