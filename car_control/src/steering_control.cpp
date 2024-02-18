@@ -40,7 +40,7 @@ public:
     declare_parameter("cmd_min", 1000);
     declare_parameter("use_wheel_speed", false);
     declare_parameter("wheel_diameter", 0.108);
-    declare_parameter("P", 5.0);
+    declare_parameter("P", 50.0);
     declare_parameter("I", 0.0);
     declare_parameter("D", 0.0);
     
@@ -110,7 +110,7 @@ private:
     angular_error_der = (angular_error - angular_error_prev) / (1.0 / loop_rate);
 
     // Calculate steering command with PID
-    steer_cmd = (P * angular_error) + (I * angular_error_cum) + (D * angular_error_der);
+    steer_cmd = (P * angular_error) + (I * angular_error_cum) + (D * angular_error_der) + 1500;
 
     // Limit servo commands and add to message
     steer_msg.data = limit_cmd(steer_cmd);
@@ -121,8 +121,9 @@ private:
     // Publish command messages
     steering_cmd_pub->publish(steer_msg);
 
-    RCLCPP_INFO(this->get_logger(), "steer_cmd: %f", steer_cmd);
+    RCLCPP_INFO(this->get_logger(), "steer_cmd: %i", steer_cmd);
     RCLCPP_INFO(this->get_logger(), "angular_vel_cmd: %f", angular_vel_cmd);
+    RCLCPP_INFO(this->get_logger(), "angular_error: %f", angular_error);
   }
 
   /// \brief The cmd_vel callback function, extracts angular velocity command

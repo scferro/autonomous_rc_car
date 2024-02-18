@@ -116,7 +116,7 @@ public:
     enable_drive = get_parameter("enable_drive").as_bool();
 
     // Define other variables
-    default_steering_cmd = (steer_left_max + steer_right_max / 2);
+    default_steering_cmd = (steer_left_max + steer_right_max) / 2;
     default_drive_cmd = (cmd_max + cmd_min) / 2;
     steering_cmd = default_steering_cmd;
     drive_cmd = default_drive_cmd;
@@ -202,8 +202,8 @@ private:
       drive_cmd = default_drive_cmd;
     }
 
-    RCLCPP_INFO(this->get_logger(), "Steering cmd: %f", steering_cmd);
-    RCLCPP_INFO(this->get_logger(), "Drive cmd: %f", drive_cmd);
+    RCLCPP_INFO(this->get_logger(), "Steering cmd: %i", steering_cmd);
+    RCLCPP_INFO(this->get_logger(), "Drive cmd: %i", drive_cmd);
 
     // Write servo commands
     setPWM(fd, 0, 0, convert_microsec(drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
