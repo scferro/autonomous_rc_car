@@ -105,6 +105,8 @@ public:
     declare_parameter("steer_left_max", 1700);
     declare_parameter("steer_right_max", 1300);
     declare_parameter("enable_drive", true);
+    declare_parameter("drive_pin", 0);
+    declare_parameter("steer_pin", 1);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
@@ -114,6 +116,8 @@ public:
     steer_left_max = get_parameter("steer_left_max").as_int();
     steer_right_max = get_parameter("steer_right_max").as_int();
     enable_drive = get_parameter("enable_drive").as_bool();
+    drive_pin = get_parameter("drive_pin").as_int();
+    steer_pin = get_parameter("steer_pin").as_int();
 
     // Define other variables
     default_steering_cmd = (steer_left_max + steer_right_max) / 2;
@@ -177,6 +181,7 @@ private:
   const char *device;
   int fd, pwm;
   bool enable_drive;
+  int drive_pin, steer_pin;
 
   // Initialize subscriptions and timer
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr steering_cmd_sub;
@@ -206,8 +211,8 @@ private:
     RCLCPP_INFO(this->get_logger(), "Drive cmd: %i", drive_cmd);
 
     // Write servo commands
-    setPWM(fd, 0, 0, convert_microsec(drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
-    setPWM(fd, 1, 0, convert_microsec(steering_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
+    setPWM(fd, drive_pin, 0, convert_microsec(drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
+    setPWM(fd, steer_pin, 0, convert_microsec(steering_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
   }
 
   /// \brief The steering_cmd callback function, updates the steering command
@@ -215,7 +220,14 @@ private:
   {
     rclcpp::Time time;
     steering_cmd = msg.data;
-    steering_cmd = check_command(steering_cmd);
+
+    // Constrain command to valid range
+    if (steering_cmd > steer_left_max) {
+      steering_cmd = cmd_max;
+    } else if (drive_cmd < steer_right_max) {
+      steering_cmd = cmd_min;
+    }
+
     time = this->get_clock()->now();
     time_last_steer = time.seconds() + (time.nanoseconds() * 0.000000001);
   }
@@ -225,24 +237,17 @@ private:
   {
     rclcpp::Time time;
     drive_cmd = msg.data;
-    drive_cmd = check_command(drive_cmd);
+
+    // Constrain command to valid range
+    if (drive_cmd > cmd_max) {
+      drive_cmd = cmd_max;
+    } else if (drive_cmd < cmd_min) {
+      drive_cmd = cmd_min;
+    }
+
+    // Get time
     time = this->get_clock()->now();
     time_last_drive = time.seconds() + (time.nanoseconds() * 0.000000001);
-  }
-
-  /// \brief Checks if a servo command is within a valid range
-  /// \param int The command to be checked
-  /// \returns the command constrained to the valid command range
-  int check_command(int cmd)
-  {
-    // Contrain the command to the valid range
-    if (cmd < 0) {
-        cmd = 0;
-    } else if (cmd > cmd_max) {
-        cmd = cmd_max;
-    }
-    // Return the constrained command
-    return cmd;
   }
 
   /// \brief ESC startup, sends a pulse of servo commands at startup to initialize ESC

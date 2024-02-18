@@ -40,7 +40,7 @@ public:
     declare_parameter("cmd_min", 1000);
     declare_parameter("use_wheel_speed", false);
     declare_parameter("wheel_diameter", 0.108);
-    declare_parameter("P", 50.0);
+    declare_parameter("P", 500.0);
     declare_parameter("I", 0.0);
     declare_parameter("D", 0.0);
     
@@ -121,9 +121,9 @@ private:
     // Publish command messages
     steering_cmd_pub->publish(steer_msg);
 
-    RCLCPP_INFO(this->get_logger(), "steer_cmd: %i", steer_cmd);
-    RCLCPP_INFO(this->get_logger(), "angular_vel_cmd: %f", angular_vel_cmd);
-    RCLCPP_INFO(this->get_logger(), "angular_error: %f", angular_error);
+    // RCLCPP_INFO(this->get_logger(), "steer_cmd: %i", steer_cmd);
+    // RCLCPP_INFO(this->get_logger(), "angular_vel_cmd: %f", angular_vel_cmd);
+    // RCLCPP_INFO(this->get_logger(), "angular_error: %f", angular_error);
   }
 
   /// \brief The cmd_vel callback function, extracts angular velocity command

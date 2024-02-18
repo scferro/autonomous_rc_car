@@ -201,15 +201,6 @@ private:
       }
     }
 
-    RCLCPP_INFO(this->get_logger(), "angular_vel[0]: %f", raw_gyro[0]);
-    RCLCPP_INFO(this->get_logger(), "angular_vel[1]: %f", raw_gyro[1]);
-    RCLCPP_INFO(this->get_logger(), "angular_vel[2]: %f", raw_gyro[2]);
-
-    RCLCPP_INFO(this->get_logger(), "accel[0]: %f", accel[0]);
-    RCLCPP_INFO(this->get_logger(), "accel[1]: %f", accel[1]);
-    RCLCPP_INFO(this->get_logger(), "accel[2]: %f", accel[2]);
-
-
     // Calculate current forward velocity based on gyro angles and accel
     linear_accel = ((-accel[0] * cos(angles[0]) * sin(angles[1])) + (accel[1] * sin(angles[0]) * cos(angles[1])) + (accel[2] * cos(angles[0]) * cos(angles[1])));
 
