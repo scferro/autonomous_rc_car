@@ -209,6 +209,8 @@ private:
 
     RCLCPP_INFO(this->get_logger(), "Steering cmd: %i", steering_cmd);
     RCLCPP_INFO(this->get_logger(), "Drive cmd: %i", drive_cmd);
+    RCLCPP_INFO(this->get_logger(), "Convert Steering cmd: %i", convert_microsec(drive_cmd));
+    RCLCPP_INFO(this->get_logger(), "Convert Drive cmd: %i", convert_microsec(steering_cmd));
 
     // Write servo commands
     setPWM(fd, drive_pin, 0, convert_microsec(drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
