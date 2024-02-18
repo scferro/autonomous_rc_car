@@ -163,7 +163,7 @@ public:
 
     initPCA9685(fd);
 
-    motor_startup();
+    // motor_startup();
 
     // Set motor commands to neutral
     setPWM(fd, 0, 0, convert_microsec(default_drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
