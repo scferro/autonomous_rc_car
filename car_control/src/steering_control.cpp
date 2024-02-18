@@ -110,7 +110,7 @@ private:
     angular_error_der = (angular_error - angular_error_prev) / (1.0 / loop_rate);
 
     // Calculate steering command with PID
-    steer_cmd = (P * angular_error) + (I * angular_error_cum) + (D * angular_error_der);
+    steer_cmd = (P * angular_error) + (I * angular_error_cum) + (D * angular_error_der) + 1500;
 
     // Limit servo commands and add to message
     steer_msg.data = limit_cmd(steer_cmd);
@@ -121,7 +121,7 @@ private:
     // Publish command messages
     steering_cmd_pub->publish(steer_msg);
 
-    RCLCPP_INFO(this->get_logger(), "steer_cmd: %f", steer_cmd);
+    RCLCPP_INFO(this->get_logger(), "steer_cmd: %i", steer_cmd);
     RCLCPP_INFO(this->get_logger(), "angular_vel_cmd: %f", angular_vel_cmd);
   }
 
