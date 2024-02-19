@@ -23,12 +23,14 @@ public:
   : Node("steering_test")
   {
     // Parameters and default values
-    declare_parameter("angular_velocity", 4.0);
+    declare_parameter("angular_velocity", 2.0);
     declare_parameter("rate", 100);
+    declare_parameter("drive_cmd", 1600);
 
     // Define parameter variables
     angular_velocity = get_parameter("angular_velocity").as_double();
     loop_rate = get_parameter("rate").as_int();
+    drive_cmd = get_parameter("drive_cmd").as_int();
 
     // Publishers
     cmd_vel_pub = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
@@ -43,8 +45,9 @@ public:
 
 private:
   // Initialize parameter variables
+  int rate;
   double angular_velocity;
-  int loop_rate;
+  int loop_rate, drive_cmd;
   int state = 1;
 
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
@@ -54,16 +57,16 @@ private:
   /// \brief The main timer callback, publishes velocity commands
   void timer_callback()
   {
-    geometry_msgs::msg::Twist vel_command;
-    std_msgs::msg::Int32 drive_cmd;
+    geometry_msgs::msg::Twist cmd_vel_msg;
+    std_msgs::msg::Int32 drive_cmd_msg;
 
     // cmd_vel and servo commands
-    vel_command.angular.z = angular_velocity;
-    drive_cmd.data = 1600;
+    cmd_vel_msg.angular.z = angular_velocity;
+    drive_cmd_msg.data = drive_cmd;
     
     // Publish commands
-    cmd_vel_pub->publish(vel_command);
-    drive_cmd_pub->publish(drive_cmd);
+    cmd_vel_pub->publish(cmd_vel_msg);
+    drive_cmd_pub->publish(drive_cmd_msg);
   }
 };
 

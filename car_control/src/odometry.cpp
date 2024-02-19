@@ -134,7 +134,7 @@ public:
     custom_qos_profile.durability_volatile();
 
     // Publishers
-    odom_pub = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+    odom_imu_pub = create_publisher<nav_msgs::msg::Odometry>("odom_imu", 10);
     odom_encoder_pub = create_publisher<nav_msgs::msg::Odometry>("odom_encoder", 10);
 
     // Subscribers
@@ -173,7 +173,7 @@ private:
   AS5048A encoder = AS5048A("/dev/spidev0.0", SPI_MODE_1, 1000000, 8); // Adjust as necessary
 
   // Create ROS publishers, timers, broadcasters, etc.
-  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_imu_pub;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_encoder_pub;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr gyro_sub;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr accel_sub;
@@ -215,7 +215,7 @@ private:
     odom_msg.pose.pose.orientation.z = angles[2];
 
     // Publish odom_msg
-    odom_pub->publish(odom_msg);
+    odom_imu_pub->publish(odom_msg);
   }
 
   /// \brief The main timer callback, updates diff_drive state and publishes odom messages

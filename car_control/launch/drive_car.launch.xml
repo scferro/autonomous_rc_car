@@ -7,7 +7,7 @@
 
     <!-- Launch simulate nodes if simulate==true -->
     <include file="$(find-pkg-share rviz_description)/launch/simulate.launch.xml" if="$(eval '\'$(var simulate)\' == \'true\'')">
-        <arg name="use_rviz" value="true" />
+        <arg name="use_rviz" value="false" />
     </include>
 
     <!-- Launch control_servos node if on_robot==true -->
@@ -16,6 +16,10 @@
 
     <!-- Launch odometry node if on_robot==true -->
     <node pkg="car_control" exec="odometry" if="$(eval '\'$(var on_robot)\' == \'true\'')">
+    </node>
+
+    <!-- Launch odometry node if simulate==true -->
+    <node pkg="car_control" exec="odometry" if="$(eval '\'$(var simulate)\' == \'true\'')">
     </node>
     
     <!-- Launch controller_interface node if use_controller==true -->

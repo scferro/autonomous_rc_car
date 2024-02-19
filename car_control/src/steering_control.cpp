@@ -69,8 +69,8 @@ public:
     cmd_vel_sub = create_subscription<geometry_msgs::msg::Twist>(
       "cmd_vel",
       10, std::bind(&Steering_Control::cmd_vel_callback, this, std::placeholders::_1));
-    odom_sub = create_subscription<nav_msgs::msg::Odometry>(
-      "odom",
+    odom_imu_sub = create_subscription<nav_msgs::msg::Odometry>(
+      "odom_imu",
       10, std::bind(&Steering_Control::odom_callback, this, std::placeholders::_1));
 
     // Main timer
@@ -95,7 +95,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr steering_cmd_pub;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub;
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_imu_sub;
   rclcpp::TimerBase::SharedPtr main_timer;
 
   /// \brief The main timer callback, loop for both wheels
@@ -105,7 +105,7 @@ private:
     std_msgs::msg::Int32 steer_msg;
 
     // Calculate error, integral/cumulative error, derivative of error
-    angular_error = angular_vel_cmd - angular_vel;
+    angular_error = angular_vel - angular_vel_cmd;
     angular_error_cum += angular_error * (1.0 / loop_rate);
     angular_error_der = (angular_error - angular_error_prev) / (1.0 / loop_rate);
 
@@ -121,9 +121,9 @@ private:
     // Publish command messages
     steering_cmd_pub->publish(steer_msg);
 
-    // RCLCPP_INFO(this->get_logger(), "steer_cmd: %i", steer_cmd);
-    // RCLCPP_INFO(this->get_logger(), "angular_vel_cmd: %f", angular_vel_cmd);
-    // RCLCPP_INFO(this->get_logger(), "angular_error: %f", angular_error);
+    RCLCPP_INFO(this->get_logger(), "steer_cmd: %i", steer_cmd);
+    RCLCPP_INFO(this->get_logger(), "angular_vel_cmd: %f", angular_vel_cmd);
+    RCLCPP_INFO(this->get_logger(), "angular_error: %f", angular_error);
   }
 
   /// \brief The cmd_vel callback function, extracts angular velocity command
