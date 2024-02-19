@@ -25,9 +25,6 @@ def generate_launch_description():
              executable="joint_state_publisher",
              condition= LaunchConfigurationEquals("use_jsp", "jsp")
              ),
-        Node(package="rviz_description",
-             executable="rviz_description",
-             ),
         Node(
             package="robot_state_publisher",
             executable="robot_state_publisher",
@@ -45,5 +42,12 @@ def generate_launch_description():
                        PathJoinSubstitution(
                            [FindPackageShare("rviz_description"), "config", "car_urdf.rviz"])],
             condition=LaunchConfigurationEquals("use_rviz", "true")
-            )
+            ),
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='static_transform_publisher',  # Optional: give a unique name to the node
+            arguments=['0', '0', '0', '0', '0', '0', '1', 'map', 'odom'],
+            output='screen',  # Optional: to display the node output in the console
+            ),
         ])

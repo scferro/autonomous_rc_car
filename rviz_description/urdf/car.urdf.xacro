@@ -1,15 +1,28 @@
 <robot name="car" xmlns:xacro="http://www.ros.org/wiki/xacro">
+      <material name="pla">
+          <color rgba="0.5 0.1 0.5 1.0" />
+      </material>
+      <material name="pla_black">
+          <color rgba="0.3 0.3 0.3 1.0" />
+      </material>
+      <material name="aluminum">
+          <color rgba="0.75 0.75 0.75 1.0" />
+      </material>
+      <material name="rubber">
+          <color rgba="0.1 0.1 0.1 1" />
+      </material>
+
       <link name="base_link">
         <inertial>
           <origin xyz="0 -0 0.01" rpy="0 -0 0"/>
-          <mass value="1.14395" />
+          <mass value="1.2" />
           <inertia
-            ixx="0.126164"
+            ixx="0.00164"
             ixy="0"
             ixz="0"
-            iyy="0.416519"
+            iyy="0.01"
             iyz="0"
-            izz="0.481014"
+            izz="0.00964"
           />
         </inertial>
         <visual>
@@ -17,9 +30,7 @@
           <geometry>
             <box size="0.3 0.08 0.1" />
           </geometry>
-          <material name="pla">
-             <color rgba="0.5 0.1 0.5 1.0" />
-          </material>
+          <material name="pla"/>
         </visual>
         <collision>
           <origin xyz="-0 0 0.1" rpy="0 -0 0"/>
@@ -38,11 +49,11 @@
 
       <link name="base_laser">
         <inertial>
-          <mass value="0.1"/>
+          <mass value="0.0"/>
           <inertia
-            ixx="0.000166667"
-            iyy="0.000166667"
-            izz="0.000166667"
+            ixx="0.0"
+            iyy="0.0"
+            izz="0.0"
             ixy="0.0"
             ixz="0.0"
             iyz="0.0"
@@ -57,19 +68,17 @@
           <geometry>
             <cylinder radius="0.05" length="0.04" />
           </geometry>
-          <material name="pla_black">
-             <color rgba="0.3 0.3 0.3 1.0" />
-          </material>
+          <material name="pla_black"/>
         </visual>
       </link>
 
       <link name="camera_link">
         <inertial>
-          <mass value="0.072"/>
+          <mass value="0.0"/>
           <inertia
-            ixx="0.000166667"
-            iyy="0.000166667"
-            izz="0.000166667"
+            ixx="0.0"
+            iyy="0.0"
+            izz="0.0"
             ixy="0.0"
             ixz="0.0"
             iyz="0.0"
@@ -81,34 +90,30 @@
           </geometry>
         </collision>
         <visual>
-          <geometry>
+          <geometry>001
             <box size="0.025 0.09 0.025" />
           </geometry>
-          <material name="aluminum">
-             <color rgba="0.75 0.75 0.75 1.0" />
-          </material>
+          <material name="aluminum"/>
         </visual>
       </link>
 
       <link name="rear_left_wheel">
         <inertial>
-          <mass value="2.0" />
+          <mass value="0.1" />
           <inertia
-            ixx="0.145833"
+            ixx="0.0000729"
             ixy="0"
             ixz="0"
-            iyy="0.145833"
+            iyy="0.0000729"
             iyz="0"
-            izz="0.125"
+            izz="0.0001458"
           />
         </inertial>
         <visual>
           <geometry>
             <cylinder radius="0.054" length="0.043" />
           </geometry>
-          <material name="rubber">
-             <color rgba="0.1 0.1 0.1 1" />
-          </material>
+          <material name="rubber"/>
         </visual>
         <collision name='collision'>
           <geometry>
@@ -119,21 +124,21 @@
 
       <link name="rear_right_wheel">
         <inertial>
-          <mass value="2.0" />
+          <mass value="0.1" />
           <inertia
-            ixx="0.145833"
+            ixx="0.0000729"
             ixy="0"
             ixz="0"
-            iyy="0.145833"
+            iyy="0.0000729"
             iyz="0"
-            izz="0.125"
+            izz="0.0001458"
           />
         </inertial>
         <visual>
           <geometry>
             <cylinder radius="0.054" length="0.043" />
           </geometry>
-          <material name="rubber" />
+          <material name="rubber"/>
         </visual>
         <collision name='collision'>
           <geometry>
@@ -144,23 +149,21 @@
 
       <link name="front_left_wheel">
         <inertial>
-          <mass value="2.0" />
+          <mass value="0.1" />
           <inertia
-            ixx="0.145833"
+            ixx="0.0000729"
             ixy="0"
             ixz="0"
-            iyy="0.145833"
+            iyy="0.0000729"
             iyz="0"
-            izz="0.125"
+            izz="0.0001458"
           />
         </inertial>
         <visual>
           <geometry>
             <cylinder radius="0.054" length="0.043" />
           </geometry>
-          <material name="rubber">
-             <color rgba="1.0 1.0 1.0 1.0" />
-          </material>
+          <material name="rubber"/>
         </visual>
         <collision name='collision'>
           <geometry>
@@ -171,14 +174,14 @@
 
       <link name="front_right_wheel">
         <inertial>
-          <mass value="2.0" />
+          <mass value="0.1" />
           <inertia
-            ixx="0.145833"
+            ixx="0.0000729"
             ixy="0"
             ixz="0"
-            iyy="0.145833"
+            iyy="0.0000729"
             iyz="0"
-            izz="0.125"
+            izz="0.0001458"
           />
         </inertial>
         <visual>
@@ -196,14 +199,14 @@
 
       <link name="front_left_hub">
         <inertial>
-          <mass value="0.0001" />
+          <mass value="0.0" />
           <inertia
-            ixx="0.001"
+            ixx="0.0"
             ixy="0"
             ixz="0"
-            iyy="0.001"
+            iyy="0.0"
             iyz="0"
-            izz="0.001"
+            izz="0.0"
           />
         </inertial>
         <collision name='collision'>
@@ -215,14 +218,14 @@
 
       <link name="front_right_hub">
         <inertial>
-          <mass value="0.0001" />
+          <mass value="0.0" />
           <inertia
-            ixx="0.001"
+            ixx="0.0"
             ixy="0"
             ixz="0"
-            iyy="0.001"
+            iyy="0.0"
             iyz="0"
-            izz="0.001"
+            izz="0.0"
           />
         </inertial>
         <collision name='collision'>
@@ -288,6 +291,4 @@
         <child link="front_right_hub" />
         <axis xyz="0 0 1" />
       </joint>
-
-      <xacro:include filename="$(find rviz_description)/urdf/car.gazebo.xacro" />
 </robot>

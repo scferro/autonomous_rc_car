@@ -32,22 +32,18 @@ public:
     declare_parameter("loop_rate", 50.);
     declare_parameter("cmd_max", 2000);
     declare_parameter("cmd_min", 1000);
-    declare_parameter("gear_ratio", 5.);
     declare_parameter("enable_controller", true);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
     cmd_max = get_parameter("cmd_max").as_int();
     cmd_min = get_parameter("cmd_min").as_int();
-    gear_ratio = get_parameter("gear_ratio").as_double();
     enable_controller = get_parameter("enable_controller").as_bool();
 
     // Define other variables
     cmd_neutral = (cmd_min + cmd_max) / 2;
     drive_cmd = cmd_neutral;
     steer_cmd = cmd_neutral;
-    wheel_speed = 0.;
-    motor_speed = 0.;
 
     // Publishers
     steering_cmd_pub = create_publisher<std_msgs::msg::Int32>("steering_cmd", 10);
@@ -57,9 +53,6 @@ public:
     joy_sub = create_subscription<sensor_msgs::msg::Joy>(
       "joy",
       10, std::bind(&Controller_Interface::joy_callback, this, std::placeholders::_1));
-    wheel_speed_sub = create_subscription<std_msgs::msg::Float64>(
-      "wheel_speed",
-      10, std::bind(&Controller_Interface::wheel_speed_callback, this, std::placeholders::_1));
 
     // Servers
     enable_controller_srv = create_service<std_srvs::srv::SetBool>(
@@ -81,14 +74,12 @@ private:
   int rate;
   int loop_rate, cmd_max, cmd_min, cmd_neutral;
   int drive_cmd, steer_cmd;
-  double wheel_speed, gear_ratio, motor_speed;
   bool enable_controller;
   
   // Create ROS publishers, timers, broadcasters, etc.
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr steering_cmd_pub;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
-  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr wheel_speed_sub;
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_drive_cli;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enable_controller_srv;
   rclcpp::TimerBase::SharedPtr main_timer;
@@ -163,13 +154,6 @@ private:
       RCLCPP_INFO(this->get_logger(), "Disabling controller.");
       enable_controller = false;
     }
-  }
-
-  /// \brief The wheel_speed callback function, stores the current wheel speed reported by the encoder
-  void wheel_speed_callback(const std_msgs::msg::Float64 & msg)
-  {
-    wheel_speed = msg.data;
-    motor_speed = wheel_speed * gear_ratio;
   }
 
   /// \brief Limits the range of a cmd to [-motor_cmd_max, motor_cmd_max]

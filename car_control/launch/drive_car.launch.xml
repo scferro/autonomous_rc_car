@@ -1,14 +1,13 @@
 <launch>
 
     <!-- Arguments -->
-    <arg name="use_rviz" default="false"/>
+    <arg name="simulate" default="false"/>
     <arg name="on_robot" default="true"/>
     <arg name="use_controller" default="true"/>
 
-    <!-- Launch URDF launch file if on_robot==true. Use RViz if use_rviz==true -->
-    <include file="$(find-pkg-share rviz_description)/launch/car_rviz.launch.py" if="$(eval '\'$(var on_robot)\' == \'true\'')">
-        <arg name="use_rviz" value="$(var use_rviz)" />
-        <arg name="use_jsp" value="jsp" />
+    <!-- Launch simulate nodes if simulate==true -->
+    <include file="$(find-pkg-share rviz_description)/launch/simulate.launch.xml" if="$(eval '\'$(var simulate)\' == \'true\'')">
+        <arg name="use_rviz" value="true" />
     </include>
 
     <!-- Launch control_servos node if on_robot==true -->
@@ -26,8 +25,5 @@
     <!-- Launch joy node if use_controller==true -->
     <node pkg="joy" exec="joy_node" if="$(eval '\'$(var use_controller)\' == \'true\'')">
     </node>
-    
-    <!-- Publish a static TF between the odom and world frames-->
-    <node pkg="tf2_ros" exec="static_transform_publisher" args="0 0 0 0 0 0 1 /map /odom"/>
 
 </launch>
