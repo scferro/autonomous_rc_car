@@ -46,12 +46,16 @@ ament_target_dependencies(odometry rclcpp geometry_msgs sensor_msgs nav_msgs)
 add_executable(steering_test src/steering_test.cpp)
 ament_target_dependencies(steering_test rclcpp geometry_msgs)
 
+add_executable(drag_race src/drag_race.cpp)
+ament_target_dependencies(drag_race rclcpp std_msgs geometry_msgs nav_msgs std_srvs)
+
 install(TARGETS
   control_servos
   steering_control
   controller_interface
   odometry
   steering_test
+  drag_race
   DESTINATION lib/${PROJECT_NAME}
 )
 

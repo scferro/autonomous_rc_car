@@ -111,7 +111,7 @@ public:
     declare_parameter("enable_drive", true);
     declare_parameter("drive_pin", 0);
     declare_parameter("steer_pin", 1);
-    declare_parameter("use_traction_control", true);
+    declare_parameter("use_traction_control", false);
     declare_parameter("simulate", true);
     declare_parameter("wheel_radius", 0.054);
     declare_parameter("gear_ratio", 5.);
