@@ -8,6 +8,8 @@
 /// SUBSCRIBES:
 ///     steering_cmd (std_msgs::msg::Int32): the command for the steering servo
 ///     drive_cmd (std_msgs::msg::Int32): the command for the drive motor ESC
+///     odom (nav_msgs::msg::Odometry): the odometry from the IMU
+///     odom_encoder (nav_msgs::msg::Odometry): the odometry from the encoder
 /// SERVERS:
 ///     enable_drive (std_srvs::srv::SetBool): enables/disables drive motor
 
@@ -28,6 +30,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/int32.hpp"
 #include "std_srvs/srv/set_bool.hpp"
+#include "ackermann_msgs/msg/ackermann_drive_stamped.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 
 using namespace std::chrono_literals;
 
@@ -107,6 +111,18 @@ public:
     declare_parameter("enable_drive", true);
     declare_parameter("drive_pin", 0);
     declare_parameter("steer_pin", 1);
+    declare_parameter("use_traction_control", true);
+    declare_parameter("simulate", true);
+    declare_parameter("wheel_radius", 0.054);
+    declare_parameter("gear_ratio", 5.);
+    declare_parameter("max_rpm", 16095.);
+    declare_parameter("steer_angle_range", 1.0);
+    declare_parameter("max_decel", 10.0);
+    declare_parameter("target_speed_multiplier", 1.1);
+    declare_parameter("target_speed_offset", 1.0);
+    declare_parameter("P", 50.0);
+    declare_parameter("I", 0.);
+    declare_parameter("D", 0.);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
@@ -118,6 +134,18 @@ public:
     enable_drive = get_parameter("enable_drive").as_bool();
     drive_pin = get_parameter("drive_pin").as_int();
     steer_pin = get_parameter("steer_pin").as_int();
+    use_traction_control = get_parameter("use_traction_control").as_bool();
+    simulate = get_parameter("simulate").as_bool();
+    wheel_radius = get_parameter("wheel_radius").as_double();
+    gear_ratio = get_parameter("gear_ratio").as_double();
+    max_rpm = get_parameter("max_rpm").as_double();
+    steer_angle_range = get_parameter("steer_angle_range").as_double();
+    max_decel = get_parameter("max_decel").as_double();
+    target_speed_multiplier = get_parameter("target_speed_multiplier").as_double();
+    target_speed_offset = get_parameter("target_speed_offset").as_double();
+    P = get_parameter("P").as_double();
+    I = get_parameter("I").as_double();
+    D = get_parameter("D").as_double();
 
     // Define other variables
     default_steering_cmd = (steer_left_max + steer_right_max) / 2;
@@ -129,6 +157,13 @@ public:
     time_last_steer = time_now;
     time_last_drive = time_now;
     enable_drive = true;
+    speed_last = 0.0;
+    speed_encoder = 0.;
+    speed = 0.;
+    speed_error = 0.;
+    speed_error_cum = 0.;
+    speed_error_prev = 0.;
+    speed_error_der = 0.;
 
     // Subscribers
     steering_cmd_sub = create_subscription<std_msgs::msg::Int32>(
@@ -137,6 +172,15 @@ public:
     drive_cmd_sub = create_subscription<std_msgs::msg::Int32>(
       "drive_cmd",
       10, std::bind(&Control_Servos::drive_cmd_callback, this, std::placeholders::_1));
+    odom_sub = create_subscription<nav_msgs::msg::Odometry>(
+      "odom",
+      10, std::bind(&Control_Servos::odom_callback, this, std::placeholders::_1));
+    odom_encoder_sub = create_subscription<nav_msgs::msg::Odometry>(
+      "odom_encoder",
+      10, std::bind(&Control_Servos::odom_encoder_callback, this, std::placeholders::_1));
+
+    // Publishers
+    ackermann_cmd_pub = create_publisher<ackermann_msgs::msg::AckermannDriveStamped>("ackermann_cmd", 10);
 
     // Servers
     enable_drive_srv = create_service<std_srvs::srv::SetBool>(
@@ -163,11 +207,12 @@ public:
 
     initPCA9685(fd);
 
-    // motor_startup();
-
-    // Set motor commands to neutral
-    setPWM(fd, 0, 0, convert_microsec(default_drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
-    setPWM(fd, 1, 0, convert_microsec(default_steering_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50H
+    // Run startup then set motor commands to neutral
+    if (simulate==false) {
+      // motor_startup();
+      setPWM(fd, 0, 0, convert_microsec(default_drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
+      setPWM(fd, 1, 0, convert_microsec(default_steering_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50H
+    }
   }
 
 private:
@@ -180,22 +225,34 @@ private:
   rclcpp::Time now;
   const char *device;
   int fd, pwm;
-  bool enable_drive;
+  bool enable_drive, use_traction_control, simulate;
   int drive_pin, steer_pin;
+  double P, I, D;
+  double wheel_radius, gear_ratio, max_rpm;
+  double speed_last, steer_angle_range, max_decel;
+  double speed_encoder, speed;
+  double speed_error, speed_error_cum, speed_error_prev, speed_error_der;
+  double target_speed_offset, target_speed_multiplier;
 
   // Initialize subscriptions and timer
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr steering_cmd_sub;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr drive_cmd_sub;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_encoder_sub;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enable_drive_srv;
+  rclcpp::Publisher<ackermann_msgs::msg::AckermannDriveStamped>::SharedPtr ackermann_cmd_pub;
   rclcpp::TimerBase::SharedPtr main_timer;
 
   /// \brief The main timer callback, updates diff_drive state and publishes odom messages
   void timer_callback()
   {
-    now = this->get_clock()->now();
-    time_now = now.seconds() + (now.nanoseconds() * 0.000000001);
+    if (use_traction_control==true) {
+      traction_control();
+    }
 
     // Check if steering and drive commands received within before timeout
+    // now = this->get_clock()->now();
+    // time_now = now.seconds() + (now.nanoseconds() * 0.000000001);
     // if (((time_now - time_last_steer) > timeout) || ((time_now - time_last_drive) > timeout)) {
     //   RCLCPP_DEBUG(this->get_logger(), "Either no steering or no drive command received within last %f seconds. Timeout.", timeout);
     //   steering_cmd = default_steering_cmd;
@@ -207,14 +264,79 @@ private:
       drive_cmd = default_drive_cmd;
     }
 
-    RCLCPP_INFO(this->get_logger(), "Steering cmd: %i", steering_cmd);
-    RCLCPP_INFO(this->get_logger(), "Drive cmd: %i", drive_cmd);
-    RCLCPP_INFO(this->get_logger(), "Convert Steering cmd: %i", convert_microsec(drive_cmd));
-    RCLCPP_INFO(this->get_logger(), "Convert Drive cmd: %i", convert_microsec(steering_cmd));
-
     // Write servo commands
-    setPWM(fd, drive_pin, 0, convert_microsec(drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
-    setPWM(fd, steer_pin, 0, convert_microsec(steering_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
+    if (simulate==false) {
+      setPWM(fd, 0, 0, convert_microsec(drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
+      setPWM(fd, 1, 0, convert_microsec(steering_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50H
+    } else {
+      publish_ackermann();
+    }
+  }
+
+  /// \brief Apply traction control to current steering command
+  void traction_control()
+  {
+    double target_speed;
+
+    // If car is being commanded forward
+    if (drive_cmd >= default_drive_cmd) {
+      // Calculate target speed
+      target_speed = (speed * target_speed_multiplier) + target_speed_offset;
+
+      // If wheel speed is below target speed, use wheel speed as target
+      if (target_speed > speed_encoder) {
+        target_speed = speed_encoder;
+      }
+
+      // Calculate speed error, integral, and derivative
+      speed_error = speed_encoder - target_speed;
+      speed_error_cum += (speed_error / loop_rate);
+      speed_error_der = (speed_error - speed_error_prev) * loop_rate;
+
+      // Use PID to calculate correction for drive command if wheels spinning
+      if (speed_encoder > target_speed){
+        drive_cmd += -((P * speed_error) + (I * speed_error_cum) + (D * speed_error_der));
+        if (drive_cmd < default_drive_cmd) {drive_cmd = default_drive_cmd;}
+        RCLCPP_INFO(this->get_logger(), "TCS: %i", drive_cmd);
+      }
+    }
+  }
+
+  /// \brief Create and publish an ackermann_msg for simulation in Isaac Sim
+  void publish_ackermann()
+  {
+    ackermann_msgs::msg::AckermannDriveStamped ackermann_cmd;
+    double speed_factor, steering_factor, speed, steering_angle;
+    
+    // Convert command messages to robot commands using robot data
+    speed_factor = (max_rpm * 2 * 3.1415926 * wheel_radius / (60 * gear_ratio)) / ((cmd_max - cmd_min) / 2);
+    steering_factor = steer_angle_range / abs(steer_left_max - steer_right_max);
+    speed = speed_factor * (drive_cmd - default_drive_cmd);
+    steering_angle = steering_factor * (steering_cmd - default_steering_cmd);
+
+    // Adjust speed if slowing down 
+    if ((speed >= 0.) && (speed_last >= 0.)){
+        if (speed < (speed_last - (max_decel / loop_rate))) {
+            speed = speed_last - (max_decel / loop_rate);
+        }
+    } else if ((speed <= 0.) and (speed_last <= 0.)) {
+        if (speed > (speed_last + (max_decel / loop_rate))) {
+            speed = speed_last + (max_decel / loop_rate);
+        }
+    }
+
+    // Add values to message
+    ackermann_cmd.drive.speed = speed;
+    ackermann_cmd.drive.steering_angle = steering_angle;
+
+    RCLCPP_INFO(this->get_logger(), "speed: %f", speed);
+
+    // Add time and publish message
+    ackermann_cmd.header.stamp = this->get_clock()->now();
+    ackermann_cmd_pub->publish(ackermann_cmd);
+
+    // Store speed as speed_last
+    speed_last = speed;
   }
 
   /// \brief The steering_cmd callback function, updates the steering command
@@ -287,6 +409,18 @@ private:
       RCLCPP_INFO(this->get_logger(), "Disabling drive motor.");
       enable_drive = false;
     }
+  }
+
+  /// \brief The odometry callback function, extracts the current angular speed of the car
+  void odom_callback(const nav_msgs::msg::Odometry & msg)
+  {
+    speed = msg.twist.twist.linear.x;
+  }
+
+  /// \brief The odometry callback function, extracts the current angular speed of the car
+  void odom_encoder_callback(const nav_msgs::msg::Odometry & msg)
+  {
+    speed_encoder = msg.twist.twist.linear.x;
   }
 };
 

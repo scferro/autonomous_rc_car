@@ -16,6 +16,7 @@ find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(ackermann_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 if(BUILD_TESTING)
@@ -31,7 +32,7 @@ if(BUILD_TESTING)
 endif()
 
 add_executable(control_servos src/control_servos.cpp)
-ament_target_dependencies(control_servos rclcpp std_msgs std_srvs)
+ament_target_dependencies(control_servos rclcpp std_msgs std_srvs ackermann_msgs nav_msgs)
 
 add_executable(steering_control src/steering_control.cpp)
 ament_target_dependencies(steering_control rclcpp std_msgs geometry_msgs nav_msgs)

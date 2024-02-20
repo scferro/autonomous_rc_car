@@ -24,6 +24,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/imu.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 
 using namespace std::chrono_literals;
@@ -95,22 +96,26 @@ public:
   : Node("odometry")
   {
     // Parameters and default values
-    declare_parameter("loop_rate", 250.);
+    declare_parameter("loop_rate", 100.);
+    declare_parameter("encoder_rate", 200.);
     declare_parameter("encoder_ticks", 8192);
     declare_parameter("gear_ratio", 5.);
     declare_parameter("wheel_diameter", 0.108);
-    declare_parameter("x_accel_offset", 0.029420);
-    declare_parameter("y_accel_offset", -9.404577);
-    declare_parameter("z_accel_offset", 0.264780);
+    declare_parameter("alpha", 0.1);
+    declare_parameter("beta", 0.00);
+    declare_parameter("gyro_thresh", 0.02);
+    declare_parameter("simulate", true);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
+    encoder_rate = get_parameter("encoder_rate").as_double();
     encoder_ticks = get_parameter("encoder_ticks").as_int();
     gear_ratio = get_parameter("gear_ratio").as_double();
     wheel_diameter = get_parameter("wheel_diameter").as_double();
-    x_accel_offset = get_parameter("x_accel_offset").as_double();
-    y_accel_offset = get_parameter("y_accel_offset").as_double();
-    z_accel_offset = get_parameter("z_accel_offset").as_double();
+    alpha = get_parameter("alpha").as_double();
+    beta = get_parameter("beta").as_double();
+    gyro_thresh = get_parameter("gyro_thresh").as_double();
+    simulate = get_parameter("simulate").as_bool();
 
     // Define other variables
     linear_vel = 0.0;
@@ -126,7 +131,13 @@ public:
     angles[0] = 0.0;
     angles[1] = 0.0;
     angles[2] = 0.0;
-    accel_thresh = 0.05;
+    gyro_angles[0] = 0.0;
+    gyro_angles[1] = 0.0;
+    gyro_angles[2] = 0.0;
+    accel_angles[0] = 0.0;
+    accel_angles[1] = 0.0;
+    accel_angles[2] = 0.0;
+    chassis_speed = 0.0;
 
     // Define custom QoS profile
     rclcpp::QoS custom_qos_profile(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_default));
@@ -134,7 +145,7 @@ public:
     custom_qos_profile.durability_volatile();
 
     // Publishers
-    odom_imu_pub = create_publisher<nav_msgs::msg::Odometry>("odom_imu", 10);
+    odom_pub = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
     odom_encoder_pub = create_publisher<nav_msgs::msg::Odometry>("odom_encoder", 10);
 
     // Subscribers
@@ -144,11 +155,15 @@ public:
     gyro_sub = create_subscription<sensor_msgs::msg::Imu>(
       "camera/camera/gyro/sample",
       custom_qos_profile, std::bind(&Odometry::gyro_callback, this, std::placeholders::_1));
+    joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
+      "joint_states_sim",
+      10, std::bind(&Odometry::joint_states_callback, this, std::placeholders::_1));
 
-    // Main timer
+    // Timers
     int cycle_time = 1000.0 / loop_rate;
+    int encoder_cycle_time = 1000.0 / encoder_rate;
     encoder_timer = this->create_wall_timer(
-      std::chrono::milliseconds(cycle_time),
+      std::chrono::milliseconds(encoder_cycle_time),
       std::bind(&Odometry::encoder_timer_callback, this));
     imu_timer = this->create_wall_timer(
       std::chrono::milliseconds(cycle_time),
@@ -159,24 +174,25 @@ private:
   // Initialize parameter variables
   int _rate;
   double raw_accel[3], accel[3], raw_gyro[3];
-  double angles[3];
+  double angles[3], gyro_angles[3], accel_angles[3];
   double linear_vel, linear_accel, angular_vel;
-  double accel_thresh;
   int rate;
-  double loop_rate, gear_ratio;
+  double loop_rate, encoder_rate, gear_ratio, alpha, beta;
   int encoder_ticks;
   uint16_t angle, angle_prev;
-  double delta, wheel_diameter;
-  double x_accel_offset, y_accel_offset, z_accel_offset;
+  double delta, wheel_diameter, chassis_speed;
+  double gyro_thresh, wheel_speed_sim;
+  bool simulate;
 
   // Initialize encoder object 
   AS5048A encoder = AS5048A("/dev/spidev0.0", SPI_MODE_1, 1000000, 8); // Adjust as necessary
 
   // Create ROS publishers, timers, broadcasters, etc.
-  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_imu_pub;
+  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_encoder_pub;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr gyro_sub;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr accel_sub;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_sub;
   rclcpp::TimerBase::SharedPtr encoder_timer;
   rclcpp::TimerBase::SharedPtr imu_timer;
 
@@ -186,26 +202,29 @@ private:
     nav_msgs::msg::Odometry odom_msg;
 
     // Calculate current gyro angles
-    angles[0] += raw_gyro[0] / loop_rate;
-    angles[1] += raw_gyro[1] / loop_rate;
-    angles[2] += raw_gyro[2] / loop_rate;
-    angular_vel = raw_gyro[1];
+    gyro_angles[0] = raw_gyro[0] / loop_rate + angles[0];
+    gyro_angles[1] = raw_gyro[1] / loop_rate + angles[1];
+    gyro_angles[2] = raw_gyro[2] / loop_rate + angles[2];
 
-    // Correct accel values. If less than accel_thresh, set to 0
-    accel[0] = raw_accel[0] - x_accel_offset;
-    accel[1] = raw_accel[1] - y_accel_offset;
-    accel[2] = raw_accel[2] - z_accel_offset;
-    for (int i = 0; i < 3; i++) {
-      if (accel[i] < accel_thresh) {
-        accel[i] = 0.0;
-      }
-    }
+    // Calculate current accel angles
+    accel_angles[0] = atan(-raw_accel[2] / sqrt(pow(raw_accel[0], 2) + pow(raw_accel[1], 2)));
+    accel_angles[2] = atan(raw_accel[0] / sqrt(pow(raw_accel[2], 2) + pow(raw_accel[1], 2)));
+
+    // Blend angles with complementary filter
+    angles[0] = (gyro_angles[0] * (1. - alpha)) + (accel_angles[0] * alpha);
+    angles[1] = gyro_angles[1];
+    angles[2] = (gyro_angles[2] * (1. - alpha)) + (accel_angles[2] * alpha);
 
     // Calculate current forward velocity based on gyro angles and accel
-    linear_accel = ((-accel[0] * cos(angles[0]) * sin(angles[1])) + (accel[1] * sin(angles[0]) * cos(angles[1])) + (accel[2] * cos(angles[0]) * cos(angles[1])));
+    linear_accel = (-raw_accel[1] * sin(angles[0])) + (raw_accel[2] * cos(angles[0]));
+    // vertical_accel = ((raw_accel[0] * cos(angles[0]) * sin(angles[2])) + (raw_accel[1] * cos(angles[0]) * cos(angles[2])) + (-raw_accel[2] * sin(angles[0]) * cos(angles[2])));
 
-    // Calculate current linear velocity
+    // Find current linear and angular velocity
     linear_vel += linear_accel / loop_rate;
+    angular_vel = raw_gyro[1];
+
+    // Blend linear_vel with chassis speed from encoder
+    linear_vel = (chassis_speed * beta) + (linear_vel * (1. - beta));
 
     // Add velocities to twist message
     odom_msg.twist.twist.linear.x = linear_vel;
@@ -215,30 +234,39 @@ private:
     odom_msg.pose.pose.orientation.z = angles[2];
 
     // Publish odom_msg
-    odom_imu_pub->publish(odom_msg);
+    odom_pub->publish(odom_msg);
   }
 
   /// \brief The main timer callback, updates diff_drive state and publishes odom messages
   void encoder_timer_callback()
   {
     nav_msgs::msg::Odometry odom_msg;
-    double chassis_speed;
+    double wheel_speed;
 
-    // Read encoder anglker
-    angle = encoder.readAngle();
+    // Check if if using simulation or not
+    if (simulate==true) {
+      // If using simulation, read joint state messages to find wheel speed
+      wheel_speed = wheel_speed_sim;      
+    } else {
+      // If not using simulation, read encoder for wheel speed
+      angle = encoder.readAngle();
 
-    // Calculate change since last reading
-    delta = angle - angle_prev;
-    if (abs(delta) > encoder_ticks/2) {
-      if (abs(delta)==delta) {
-        delta = -(encoder_ticks - abs(delta));
-      } else {
-        delta = (encoder_ticks - abs(delta));
+      // Calculate change since last reading
+      delta = angle - angle_prev;
+      if (abs(delta) > encoder_ticks/2) {
+        if (abs(delta)==delta) {
+          delta = -(encoder_ticks - abs(delta));
+        } else {
+          delta = (encoder_ticks - abs(delta));
+        }
       }
+
+      // Calculate wheel_speed
+      wheel_speed = (delta / (encoder_ticks * gear_ratio)) * loop_rate * 6.283185307;
     }
 
-    // Calculate wheel speed
-    chassis_speed = (delta / (encoder_ticks * gear_ratio)) * loop_rate * 6.283185307 * wheel_diameter / 2;
+    // Calculate chassis speed based on wheel motor
+    chassis_speed = wheel_speed * wheel_diameter / 2;
 
     // Publish wheel speed messages
     odom_msg.twist.twist.linear.x = chassis_speed;
@@ -248,26 +276,32 @@ private:
     angle_prev = angle;
   }
 
-  /// \brief The cmd_vel callback function, publishes motor speed commands based on received twist command
-  void accel_callback(const sensor_msgs::msg::Imu & msg)
-  {
-    raw_accel[0] = msg.linear_acceleration.x;
-    raw_accel[1] = msg.linear_acceleration.y;
-    raw_accel[2] = msg.linear_acceleration.z;
-    // RCLCPP_INFO(this->get_logger(), "linear_accel[0]: %f", raw_accel[0]);
-    // RCLCPP_INFO(this->get_logger(), "linear_accel[1]: %f", raw_accel[1]);
-    // RCLCPP_INFO(this->get_logger(), "linear_accel[2]: %f", raw_accel[2]);
-  }
-
-  /// \brief The wheel_speed callback function, calculates vehicle speed based on wheel speed if enabled
+  /// \brief The gyro callback function, stores data published by the IMU
   void gyro_callback(const sensor_msgs::msg::Imu & msg)
   {
     raw_gyro[0] = msg.angular_velocity.x;
     raw_gyro[1] = msg.angular_velocity.y;
     raw_gyro[2] = msg.angular_velocity.z;
-    // RCLCPP_INFO(this->get_logger(), "angular_vel[0]: %f", raw_gyro[0]);
-    // RCLCPP_INFO(this->get_logger(), "angular_vel[1]: %f", raw_gyro[1]);
-    // RCLCPP_INFO(this->get_logger(), "angular_vel[2]: %f", raw_gyro[2]);
+
+    for (int i = 0; i < 3; i++) {
+        if ((raw_gyro[i] < gyro_thresh && (raw_gyro[i] > -gyro_thresh))) {
+          raw_gyro[i] = 0.0;
+        }
+    }
+  }
+
+  /// \brief The accel callback function, stores data published by the IMU
+  void accel_callback(const sensor_msgs::msg::Imu & msg)
+  {
+    raw_accel[0] = msg.linear_acceleration.x;
+    raw_accel[1] = msg.linear_acceleration.y;
+    raw_accel[2] = msg.linear_acceleration.z;
+  }
+
+  /// \brief The accel callback function, stores data published by the IMU
+  void joint_states_callback(const sensor_msgs::msg::JointState & msg)
+  {
+    wheel_speed_sim = msg.velocity[2];
   }
 };
 

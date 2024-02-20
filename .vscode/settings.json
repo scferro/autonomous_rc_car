@@ -5,6 +5,7 @@
         "string": "cpp",
         "string_view": "cpp",
         "mode_node": "cpp",
-        "imu_processing": "cpp"
+        "imu_processing": "cpp",
+        "functional": "cpp"
     }
 }

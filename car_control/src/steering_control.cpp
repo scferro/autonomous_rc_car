@@ -40,9 +40,9 @@ public:
     declare_parameter("cmd_min", 1000);
     declare_parameter("use_wheel_speed", false);
     declare_parameter("wheel_diameter", 0.108);
-    declare_parameter("P", 100.0);
-    declare_parameter("I", 0.0);
-    declare_parameter("D", 0.0);
+    declare_parameter("P", 50.0);
+    declare_parameter("I", 5.0);
+    declare_parameter("D", 0.1);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();

@@ -2,9 +2,9 @@
 
     <!-- Arguments -->
     <arg name="simulate" default="true"/>
-    <arg name="P" default="20."/>
-    <arg name="I" default="0."/>
-    <arg name="D" default="0."/>
+    <arg name="P" default="50."/>
+    <arg name="I" default="5."/>
+    <arg name="D" default="0.1"/>
 
     <!-- Launch simulate nodes if simulate==true -->
     <include file="$(find-pkg-share car_control)/launch/drive_car.launch.xml">
