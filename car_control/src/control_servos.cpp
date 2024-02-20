@@ -117,7 +117,8 @@ public:
     declare_parameter("gear_ratio", 5.);
     declare_parameter("max_rpm", 16095.);
     declare_parameter("steer_angle_range", 1.0);
-    declare_parameter("max_decel", 10.0);
+    declare_parameter("max_decel_multiplier", 0.25);
+    declare_parameter("max_decel_offset", 0.1);
     declare_parameter("target_speed_multiplier", 1.1);
     declare_parameter("target_speed_offset", 1.0);
     declare_parameter("P", 50.0);
@@ -140,7 +141,8 @@ public:
     gear_ratio = get_parameter("gear_ratio").as_double();
     max_rpm = get_parameter("max_rpm").as_double();
     steer_angle_range = get_parameter("steer_angle_range").as_double();
-    max_decel = get_parameter("max_decel").as_double();
+    max_decel_offset = get_parameter("max_decel_offset").as_double();
+    max_decel_multiplier = get_parameter("max_decel_multiplier").as_double();
     target_speed_multiplier = get_parameter("target_speed_multiplier").as_double();
     target_speed_offset = get_parameter("target_speed_offset").as_double();
     P = get_parameter("P").as_double();
@@ -164,6 +166,7 @@ public:
     speed_error_cum = 0.;
     speed_error_prev = 0.;
     speed_error_der = 0.;
+    max_decel = 0.;
 
     // Subscribers
     steering_cmd_sub = create_subscription<std_msgs::msg::Int32>(
@@ -229,7 +232,7 @@ private:
   int drive_pin, steer_pin;
   double P, I, D;
   double wheel_radius, gear_ratio, max_rpm;
-  double speed_last, steer_angle_range, max_decel;
+  double speed_last, steer_angle_range, max_decel, max_decel_multiplier, max_decel_offset;
   double speed_encoder, speed;
   double speed_error, speed_error_cum, speed_error_prev, speed_error_der;
   double target_speed_offset, target_speed_multiplier;
@@ -306,37 +309,41 @@ private:
   void publish_ackermann()
   {
     ackermann_msgs::msg::AckermannDriveStamped ackermann_cmd;
-    double speed_factor, steering_factor, speed, steering_angle;
+    double speed_factor, steering_factor, speed_sim, steering_angle;
     
     // Convert command messages to robot commands using robot data
     speed_factor = (max_rpm * 2 * 3.1415926 * wheel_radius / (60 * gear_ratio)) / ((cmd_max - cmd_min) / 2);
     steering_factor = steer_angle_range / abs(steer_left_max - steer_right_max);
-    speed = speed_factor * (drive_cmd - default_drive_cmd);
+    speed_sim = speed_factor * (drive_cmd - default_drive_cmd);
     steering_angle = steering_factor * (steering_cmd - default_steering_cmd);
 
+    max_decel = pow(speed_last, 2) * max_decel_multiplier + max_decel_offset;
+
+    RCLCPP_INFO(this->get_logger(), "max_decel: %f", max_decel);
+    RCLCPP_INFO(this->get_logger(), "speed1: %f", speed_sim);
+    RCLCPP_INFO(this->get_logger(), "speed_last_prev: %f", speed_last);
+
     // Adjust speed if slowing down 
-    if ((speed >= 0.) && (speed_last >= 0.)){
-        if (speed < (speed_last - (max_decel / loop_rate))) {
-            speed = speed_last - (max_decel / loop_rate);
+    if ((speed_sim >= 0.) && (speed_last >= 0.)){
+        if (speed_sim < (speed_last - (max_decel / loop_rate))) {
+            speed_sim = speed_last - (max_decel / loop_rate);
         }
-    } else if ((speed <= 0.) and (speed_last <= 0.)) {
-        if (speed > (speed_last + (max_decel / loop_rate))) {
-            speed = speed_last + (max_decel / loop_rate);
+    } else if ((speed_sim <= 0.) and (speed_last <= 0.)) {
+        if (speed_sim > (speed_last + (max_decel / loop_rate))) {
+            speed_sim = speed_last + (max_decel / loop_rate);
         }
     }
 
     // Add values to message
-    ackermann_cmd.drive.speed = speed;
+    ackermann_cmd.drive.speed = speed_sim;
     ackermann_cmd.drive.steering_angle = steering_angle;
-
-    RCLCPP_INFO(this->get_logger(), "speed: %f", speed);
 
     // Add time and publish message
     ackermann_cmd.header.stamp = this->get_clock()->now();
     ackermann_cmd_pub->publish(ackermann_cmd);
 
     // Store speed as speed_last
-    speed_last = speed;
+    speed_last = speed_sim;
   }
 
   /// \brief The steering_cmd callback function, updates the steering command

@@ -6,6 +6,8 @@
         "string_view": "cpp",
         "mode_node": "cpp",
         "imu_processing": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "cmath": "cpp",
+        "complex": "cpp"
     }
 }
