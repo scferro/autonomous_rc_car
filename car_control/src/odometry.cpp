@@ -26,6 +26,7 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "std_srvs/srv/empty.hpp"
 
 using namespace std::chrono_literals;
 
@@ -159,6 +160,11 @@ public:
       "joint_states_sim",
       10, std::bind(&Odometry::joint_states_callback, this, std::placeholders::_1));
 
+    // Servers
+    imu_reset_srv = create_service<std_srvs::srv::Empty>(
+      "imu_reset",
+      std::bind(&Odometry::imu_reset_callback, this, std::placeholders::_1, std::placeholders::_2));
+
     // Timers
     int cycle_time = 1000.0 / loop_rate;
     int encoder_cycle_time = 1000.0 / encoder_rate;
@@ -193,6 +199,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr gyro_sub;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr accel_sub;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_sub;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr imu_reset_srv;
   rclcpp::TimerBase::SharedPtr encoder_timer;
   rclcpp::TimerBase::SharedPtr imu_timer;
 
@@ -298,10 +305,40 @@ private:
     raw_accel[2] = msg.linear_acceleration.z;
   }
 
-  /// \brief The accel callback function, stores data published by the IMU
+  /// \brief The joint_states callback function, stores the wheel speed of the rear wheels
   void joint_states_callback(const sensor_msgs::msg::JointState & msg)
   {
     wheel_speed_sim = msg.velocity[2];
+  }
+
+  /// \brief Callback reseting IMU odometry, should only be used when robot is stationary and level
+  void imu_reset_callback(
+    std_srvs::srv::Empty::Request::SharedPtr,
+    std_srvs::srv::Empty::Response::SharedPtr)
+  {
+    // Reset all IMU variables
+    linear_vel = 0.0;
+    linear_accel = 0.0;
+    angular_vel = 0.0;
+    angle_prev = 0.;
+    raw_accel[0] = 0.0;
+    raw_accel[1] = 0.0;
+    raw_accel[2] = 0.0;
+    raw_gyro[0] = 0.0;
+    raw_gyro[1] = 0.0;
+    raw_gyro[2] = 0.0;
+    angles[0] = 0.0;
+    angles[1] = 0.0;
+    angles[2] = 0.0;
+    gyro_angles[0] = 0.0;
+    gyro_angles[1] = 0.0;
+    gyro_angles[2] = 0.0;
+    accel_angles[0] = 0.0;
+    accel_angles[1] = 0.0;
+    accel_angles[2] = 0.0;
+    chassis_speed = 0.0;
+
+    RCLCPP_INFO(this->get_logger(), "IMU Reset.");
   }
 };
 
