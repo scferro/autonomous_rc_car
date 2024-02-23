@@ -144,6 +144,7 @@ private:
         count++;
       }
       auto result = enable_drive_cli->async_send_request(request);
+      enable_drive_cmd = false;
     }
 
     // Check if enable_controller buttons are pressed

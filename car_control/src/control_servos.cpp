@@ -121,9 +121,9 @@ public:
     declare_parameter("max_decel_offset", 0.1);
     declare_parameter("target_speed_multiplier", 1.1);
     declare_parameter("target_speed_offset", 1.0);
-    declare_parameter("P", 50.0);
-    declare_parameter("I", 0.);
-    declare_parameter("D", 0.);
+    declare_parameter("Kp", 50.0);
+    declare_parameter("Ki", 0.);
+    declare_parameter("Kd", 0.);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
@@ -145,9 +145,9 @@ public:
     max_decel_multiplier = get_parameter("max_decel_multiplier").as_double();
     target_speed_multiplier = get_parameter("target_speed_multiplier").as_double();
     target_speed_offset = get_parameter("target_speed_offset").as_double();
-    P = get_parameter("P").as_double();
-    I = get_parameter("I").as_double();
-    D = get_parameter("D").as_double();
+    Kp = get_parameter("Kp").as_double();
+    Ki = get_parameter("Ki").as_double();
+    Kd = get_parameter("Kd").as_double();
 
     // Define other variables
     default_steering_cmd = (steer_left_max + steer_right_max) / 2;
@@ -230,7 +230,7 @@ private:
   int fd, pwm;
   bool enable_drive, use_traction_control, simulate;
   int drive_pin, steer_pin;
-  double P, I, D;
+  double Kp, Ki, Kd;
   double wheel_radius, gear_ratio, max_rpm;
   double speed_last, steer_angle_range, max_decel, max_decel_multiplier, max_decel_offset;
   double speed_encoder, speed;
@@ -298,7 +298,7 @@ private:
 
       // Use PID to calculate correction for drive command if wheels spinning
       if (speed_encoder > target_speed){
-        drive_cmd += -((P * speed_error) + (I * speed_error_cum) + (D * speed_error_der));
+        drive_cmd += -((Kp * speed_error) + (Ki * speed_error_cum) + (Kd * speed_error_der));
         if (drive_cmd < default_drive_cmd) {drive_cmd = default_drive_cmd;}
         RCLCPP_INFO(this->get_logger(), "TCS: %i", drive_cmd);
       }

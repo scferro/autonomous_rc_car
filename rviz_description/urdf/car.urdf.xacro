@@ -634,7 +634,7 @@
           <material name="rubber"/>
         </visual>
         <collision name='collision'>
-          <origin xyz="0 0 0.0215" rpy="0 0 0" />
+          <origin xyz="0 0 0.0215" rpy="0 0 0" /> 
           <geometry>
             <cylinder radius="0.054" length="0.043" />
           </geometry>
