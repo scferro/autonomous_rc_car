@@ -61,6 +61,7 @@ public:
 
     // Clients
     enable_drive_cli = create_client<std_srvs::srv::SetBool>("enable_drive");
+    imu_reset_cli = create_client<std_srvs::srv::Empty>("imu_reset");
 
     // Main timer
     int cycle_time = 1000.0 / loop_rate;
@@ -81,6 +82,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_drive_cli;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr imu_reset_cli;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enable_controller_srv;
   rclcpp::TimerBase::SharedPtr main_timer;
 
@@ -154,6 +156,16 @@ private:
     } else if (msg.buttons[4]==1) {
       RCLCPP_INFO(this->get_logger(), "Disabling controller.");
       enable_controller = false;
+    }
+
+    // If reset_imu button is press, call reset IMU service
+    if (msg.buttons[3]==1) {
+      int count = 0;
+      while ((!reset_imu_cli->wait_for_service(1s)) && (count < 5)) {
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for reset_imu service...");
+        count++;
+      }
+      auto result = reset_imu_cli->async_send_request(request);
     }
   }
 
