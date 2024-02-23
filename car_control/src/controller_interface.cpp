@@ -3,6 +3,9 @@
 ///
 /// PARAMETERS:
 ///     loop_rate (double): the publishing rate of the main loop (Hz)
+///     cmd_max (int): the maximum command from servo driver
+///     cmd_min (int): the minimum command from servo driver
+///     enable_controller (bool): enables publishing drive_cmd and steering_cmd from the controller node
 /// SUBSCRIBES:
 ///     joy (sensor_msgs::msg::Joy): the controller inputs
 ///     wheel_speed (std_msgs::msg::Float64): the speed of the rear wheels
@@ -13,6 +16,8 @@
 ///     enable_controller (std_srvs::srv::SetBool): enables/disables sending servo commands from the controller interface node
 /// CLIENTS:
 ///     enable_drive (std_srvs::srv::SetBool): enables/disbales drive
+///     reset_imu (std_srvs::srv::Empty): resets IMU data
+///     start_race (std_srvs::srv::Empty): starts a race - the car will launch and do laps or a drag race, depending on nodes running
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/int32.hpp"
@@ -62,6 +67,7 @@ public:
     // Clients
     enable_drive_cli = create_client<std_srvs::srv::SetBool>("enable_drive");
     imu_reset_cli = create_client<std_srvs::srv::Empty>("imu_reset");
+    start_race_cli = create_client<std_srvs::srv::Empty>("start_race");
 
     // Main timer
     int cycle_time = 1000.0 / loop_rate;
@@ -83,6 +89,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_drive_cli;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr imu_reset_cli;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr start_race_cli;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enable_controller_srv;
   rclcpp::TimerBase::SharedPtr main_timer;
 
@@ -160,6 +167,16 @@ private:
 
     // If reset_imu button is press, call reset IMU service
     if (msg.buttons[3]==1) {
+      int count = 0;
+      while ((!reset_imu_cli->wait_for_service(1s)) && (count < 5)) {
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for reset_imu service...");
+        count++;
+      }
+      auto result = reset_imu_cli->async_send_request(request);
+    }
+
+    // If start_race button is press, call start_race service
+    if (msg.buttons[2]==1) {
       int count = 0;
       while ((!reset_imu_cli->wait_for_service(1s)) && (count < 5)) {
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for reset_imu service...");

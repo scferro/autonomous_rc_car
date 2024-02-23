@@ -3,13 +3,34 @@
 ///
 /// PARAMETERS:
 ///     rate (double): the publishing rate for wheel speed messages
-///     cmd_max (int): the maximum servo command
+///     cmd_max (int): the maximum command from servo driver
+///     cmd_min (int): the minimum command from servo driver
 ///     timeout (double): minimum time required between receiving commands
+///     steer_left_max (int): maximum steering servo command
+///     steer_right_max (int): minimum steering servo command
+///     enable_drive (bool): allow publishing drive commands
+///     use_traction_control (bool): enables traction control
+///     simulate (bool): publish commands for isaacsim simulation
+///     drive_pin (int): the pin used for the drive motor on the servo driver
+///     steer_pin (int): the pin used for the steering servo on the servo driver
+///     wheel_diameter (double): the diameter of the robot wheels
+///     gear_ratio (double): the gear ratio of the robot
+///     max_rpm (double): max motor RPM - KV * V
+///     steer_angle_range (double): steering angle range, used for simulation
+///     max_decel_multiplier (double): multiplier for simulated deceleration
+///     max_decel_offset (double): offset for simulated deceleration
+///     target_speed_multiplier (double): multiplier for traction control target speed
+///     target_speed_offset (double): offset for traction control target speed
+///     Kp (double): Kp for traction control
+///     Ki (double): Ki for traction control
+///     Kd (double): Kd for traction control
 /// SUBSCRIBES:
 ///     steering_cmd (std_msgs::msg::Int32): the command for the steering servo
 ///     drive_cmd (std_msgs::msg::Int32): the command for the drive motor ESC
 ///     odom (nav_msgs::msg::Odometry): the odometry from the IMU
 ///     odom_encoder (nav_msgs::msg::Odometry): the odometry from the encoder
+/// PUBLISHES:
+///     ackermann_cmd (ackermann_msgs::msg::AckermannDriveStamped): ackermann commands published for simulation in Isaac Sim
 /// SERVERS:
 ///     enable_drive (std_srvs::srv::SetBool): enables/disables drive motor
 
@@ -106,14 +127,14 @@ public:
     declare_parameter("cmd_max", 2000);
     declare_parameter("cmd_min", 1000);
     declare_parameter("timeout", 1.);
-    declare_parameter("steer_left_max", 1700);
-    declare_parameter("steer_right_max", 1300);
+    declare_parameter("steer_left_max", 1750);
+    declare_parameter("steer_right_max", 1250);
     declare_parameter("enable_drive", true);
-    declare_parameter("drive_pin", 0);
-    declare_parameter("steer_pin", 1);
     declare_parameter("use_traction_control", false);
     declare_parameter("simulate", true);
-    declare_parameter("wheel_radius", 0.054);
+    declare_parameter("drive_pin", 0);
+    declare_parameter("steer_pin", 1);
+    declare_parameter("wheel_diameter", 0.108);
     declare_parameter("gear_ratio", 5.);
     declare_parameter("max_rpm", 16095.);
     declare_parameter("steer_angle_range", 1.0);
@@ -137,7 +158,7 @@ public:
     steer_pin = get_parameter("steer_pin").as_int();
     use_traction_control = get_parameter("use_traction_control").as_bool();
     simulate = get_parameter("simulate").as_bool();
-    wheel_radius = get_parameter("wheel_radius").as_double();
+    wheel_diameter = get_parameter("wheel_diameter").as_double();
     gear_ratio = get_parameter("gear_ratio").as_double();
     max_rpm = get_parameter("max_rpm").as_double();
     steer_angle_range = get_parameter("steer_angle_range").as_double();
@@ -231,7 +252,7 @@ private:
   bool enable_drive, use_traction_control, simulate;
   int drive_pin, steer_pin;
   double Kp, Ki, Kd;
-  double wheel_radius, gear_ratio, max_rpm;
+  double wheel_diameter, gear_ratio, max_rpm;
   double speed_last, steer_angle_range, max_decel, max_decel_multiplier, max_decel_offset;
   double speed_encoder, speed;
   double speed_error, speed_error_cum, speed_error_prev, speed_error_der;
@@ -312,7 +333,7 @@ private:
     double speed_factor, steering_factor, speed_sim, steering_angle;
     
     // Convert command messages to robot commands using robot data
-    speed_factor = (max_rpm * 2 * 3.1415926 * wheel_radius / (60 * gear_ratio)) / ((cmd_max - cmd_min) / 2);
+    speed_factor = (max_rpm * 2 * 3.1415926 * (wheel_diameter / 2) / (60 * gear_ratio)) / ((cmd_max - cmd_min) / 2);
     steering_factor = steer_angle_range / abs(steer_left_max - steer_right_max);
     speed_sim = speed_factor * (drive_cmd - default_drive_cmd);
     steering_angle = steering_factor * (steering_cmd - default_steering_cmd);

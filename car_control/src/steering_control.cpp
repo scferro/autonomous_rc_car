@@ -6,7 +6,10 @@
 ///     cmd_max (int): the maximum command sent to the servo
 ///     cmd_min (int): the minimum command sent to the servo
 ///     use_wheel_speed (bool): if the wheel encoder should be used for robot speed feedback
-///     wheel_diameter (double): the publishing rate of the main loop (Hz)
+///     wheel_diameter (double): the wheel diameter of the robot
+///     Kp (double): Kp for steering control
+///     Ki (double): Ki for steering control
+///     Kd (double): Kd for steering control
 /// SUBSCRIBES:
 ///     cmd_vel (geometry_msgs::msg::Twist): the robot velocity commands
 ///     wheel_speed (std_msgs::msg::Float64): the speed of the rear wheels
@@ -40,9 +43,9 @@ public:
     declare_parameter("cmd_min", 1000);
     declare_parameter("use_wheel_speed", false);
     declare_parameter("wheel_diameter", 0.108);
-    declare_parameter("P", 50.0);
-    declare_parameter("I", 5.0);
-    declare_parameter("D", 0.1);
+    declare_parameter("Kp", 50.0);
+    declare_parameter("Ki", 5.0);
+    declare_parameter("Kd", 0.1);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
@@ -50,9 +53,9 @@ public:
     cmd_min = get_parameter("cmd_min").as_int();
     use_wheel_speed = get_parameter("use_wheel_speed").as_bool();
     wheel_diameter = get_parameter("wheel_diameter").as_double();
-    P = get_parameter("P").as_double();
-    I = get_parameter("I").as_double();
-    D = get_parameter("D").as_double();
+    Kp = get_parameter("Kp").as_double();
+    Ki = get_parameter("Ki").as_double();
+    Kd = get_parameter("Kd").as_double();
 
     cmd_neutral = (cmd_min + cmd_max) / 2;
     angular_vel = 0.;
@@ -86,7 +89,7 @@ private:
   int loop_rate, cmd_max, cmd_min, cmd_neutral, steer_cmd;
   bool use_wheel_speed;
   double wheel_diameter;
-  double P, I, D;
+  double Kp, Ki, Kd;
   double angular_vel, angular_vel_cmd;
   double angular_error, angular_error_prev, angular_error_cum, angular_error_der;
   rclcpp::Time now;
@@ -110,7 +113,7 @@ private:
     angular_error_der = (angular_error - angular_error_prev) / (1.0 / loop_rate);
 
     // Calculate steering command with PID
-    steer_cmd = (P * angular_error) + (I * angular_error_cum) + (D * angular_error_der) + 1500;
+    steer_cmd = (Kp * angular_error) + (Ki * angular_error_cum) + (Kd * angular_error_der) + 1500;
 
     // Limit servo commands and add to message
     steer_msg.data = limit_cmd(steer_cmd);
@@ -121,9 +124,9 @@ private:
     // Publish command messages
     steering_cmd_pub->publish(steer_msg);
 
-    RCLCPP_INFO(this->get_logger(), "steer_cmd: %i", steer_cmd);
-    RCLCPP_INFO(this->get_logger(), "angular_vel_cmd: %f", angular_vel_cmd);
-    RCLCPP_INFO(this->get_logger(), "angular_error: %f", angular_error);
+    // RCLCPP_INFO(this->get_logger(), "steer_cmd: %i", steer_cmd);
+    // RCLCPP_INFO(this->get_logger(), "angular_vel_cmd: %f", angular_vel_cmd);
+    // RCLCPP_INFO(this->get_logger(), "angular_error: %f", angular_error);
   }
 
   /// \brief The cmd_vel callback function, extracts angular velocity command

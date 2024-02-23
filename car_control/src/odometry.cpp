@@ -3,11 +3,22 @@
 ///
 /// PARAMETERS:
 ///     loop_rate (double): the publishing rate of the main loop (Hz)
+///     encoder_rate (double): the rate to read the encoder (Hz)
+///     encoder_ticks (int): ticks per revolution for the encoder
+///     gear_ratio (double): the gear ratio of the robot
+///     wheel_diameter (double): the diameter fo the wheel (m)
+///     alpha (double): the blending coefficient for blending gyro and accel angle estimates, % of accel used
+///     beta (double): the blending coefficient for blending IMU and wheel speed odom, % of wheelspeed used
+///     gyro_thresh (double): the minimum value to read from the gyro, values below this will be read as 0.
+///     simulate (bool): determines if wheel speed odom data should be collected from the real encoder or simulation data
 /// SUBSCRIBES:
 ///     camera/camera/gyro/sample (sensor_msgs::msg::Imu): the gyro data
 ///     camera/camera/accel/sample (sensor_msgs::msg::Imu): the accelerometer data
 /// PUBLISHES:
-///     steering_cmd (geometry_msgs::msg::Twist): the command for the steering servo
+///     odom (nav_msgs::msg::Odometry): odometry using the IMU blended with wheel speed data (considered most accurate)
+///     odom_encoder (nav_msgs::msg::Odometry): odometry the wheel speed encoder only
+/// SERVERS:
+///     reset_imu (std_srvs::srv::Empty): resets IMU data
 
 #include <chrono>
 #include <memory>
@@ -102,7 +113,7 @@ public:
     declare_parameter("encoder_ticks", 8192);
     declare_parameter("gear_ratio", 5.);
     declare_parameter("wheel_diameter", 0.108);
-    declare_parameter("alpha", 0.1);
+    declare_parameter("alpha", 0.05);
     declare_parameter("beta", 0.00);
     declare_parameter("gyro_thresh", 0.02);
     declare_parameter("simulate", true);
