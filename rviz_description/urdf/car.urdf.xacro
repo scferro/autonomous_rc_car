@@ -3,7 +3,7 @@
           <color rgba="0.4 0.1 0.6 1.0" />
       </material>
       <material name="pla_black">
-          <color rgba="0.3 0.3 0.3 1.0" />
+          <color rgba="0.1 0.1 0.1 1.0" />
       </material>
       <material name="aluminum">
           <color rgba="0.75 0.75 0.75 1.0" />
@@ -25,27 +25,653 @@
             izz="0.00964"
           />
         </inertial>
+      </link>
+
+      <link name="chassis_visual">
+        <material name="pla">
+        </material>
+        <collision>
+        <origin xyz="0.041230177353335013823 0.0081385453814205033218 0.046435964631839833638" rpy="-3.3417470151423496181e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/base_plate.stl"/>
+        </geometry>
+        </collision>
         <visual>
-          <origin xyz="-0 0 0.1" rpy="0 -0 0"/>
-          <geometry>
-            <box size="0.3 0.08 0.1" />
-          </geometry>
-          <material name="pla"/>
+        <origin xyz="0.041230177353335013823 0.0081385453814205033218 0.046435964631839833638" rpy="-3.3417470151423496181e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/base_plate.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
         </visual>
         <collision>
-          <origin xyz="-0 0 0.1" rpy="0 -0 0"/>
-          <geometry>
-            <box size="0.34 0.1 0.1" />
-          </geometry>
+        <origin xyz="0.19593310870444985428 -0.023861467502207221042 0.032178813240731983514" rpy="-3.2732333544360483958e-15 0.2617993877991453 -3.141592653589758477" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/a01.stl"/>
+        </geometry>
         </collision>
+        <visual>
+        <origin xyz="0.19593310870444985428 -0.023861467502207221042 0.032178813240731983514" rpy="-3.2732333544360483958e-15 0.2617993877991453 -3.141592653589758477" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/a01.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.04123017735333503464 0.0081385453814205102607 0.046435964631839812822" rpy="-3.3417470151423496181e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/lidar_hat.stl" />
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.04123017735333503464 0.0081385453814205102607 0.046435964631839812822" rpy="-3.3417470151423496181e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/lidar_hat.stl" />
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.13723742104151451238 0.0081385080643659821892 -0.016939957217469308465" rpy="-2.8798352240597813179 0.0047416661133447609439 -1.5884935220184366322" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/servo_horn.stl" />
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.13723742104151451238 0.0081385080643659821892 -0.016939957217469308465" rpy="-2.8798352240597813179 0.0047416661133447609439 -1.5884935220184366322" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/servo_horn.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.13670687602963785268 -0.03936145461857500083 -0.014959800155109849104" rpy="0.2587527927311239484 -0.040277584424269617658 -1.4198241414961039197" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/a07.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.13670687602963785268 -0.03936145461857500083 -0.014959800155109849104" rpy="0.2587527927311239484 -0.040277584424269617658 -1.4198241414961039197" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/a07.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.04123017735333503464 0.0081385453814205033218 0.046435964631839812822" rpy="-3.3417470151423511958e-15 1.526745151487648385e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/cover_plate.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.04123017735333503464 0.0081385453814205033218 0.046435964631839812822" rpy="-3.3417470151423511958e-15 1.526745151487648385e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/cover_plate.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.10551982264666515121 0.0081385453814153008861 -0.013564035368159699235" rpy="-1.43313038473456271e-15 -3.2196467714129512062e-15 -3.1415926535897575889" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b01.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.10551982264666515121 0.0081385453814153008861 -0.013564035368159699235" rpy="-1.43313038473456271e-15 -3.2196467714129512062e-15 -3.1415926535897575889" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b01.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.11581879474062792279 0.0085030890984705998631 -0.013879213304290068456" rpy="-2.8797932657906391007 -8.7102102948532753564e-16 -1.5707963267948523711" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/a09.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.11581879474062792279 0.0085030890984705998631 -0.013879213304290068456" rpy="-2.8797932657906391007 -8.7102102948532753564e-16 -1.5707963267948523711" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/a09.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.10673017735333342748 0.052638545381422860436 0.046435964631839680983" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.10673017735333342748 0.052638545381422860436 0.046435964631839680983" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.065119822646664923815 0.0081385453814172559195 -0.013564035368159824135" rpy="-3.3439154194872535738e-15 1.4330867597460451378e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b12-t.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.065119822646664923815 0.0081385453814172559195 -0.013564035368159824135" rpy="-3.3439154194872535738e-15 1.4330867597460451378e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b12-t.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.041230177353335013823 0.0081385453814205033218 0.0464359646318398267" rpy="-3.3417470151423488292e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/servo_drive_mount.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.041230177353335013823 0.0081385453814205033218 0.0464359646318398267" rpy="-3.3417470151423488292e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/servo_drive_mount.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.15373017735333374678 0.042638545381424579339 0.043435964631839511785" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.15373017735333374678 0.042638545381424579339 0.043435964631839511785" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.032119822646662896104 -0.028861454618582277343 -0.0055640353681599558078" rpy="-1.5707963267948608088 -1.5707963267948930053 0" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b08-t.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.032119822646662896104 -0.028861454618582277343 -0.0055640353681599558078" rpy="-1.5707963267948608088 -1.5707963267948930053 0" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b08-t.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.24460720741232999664 0.0081385324977948994563 -0.035452873509516522055" rpy="0.2617993877991457996 3.1621891307223835711e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b07-t.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.24460720741232999664 0.0081385324977948994563 -0.035452873509516522055" rpy="0.2617993877991457996 3.1621891307223835711e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b07-t.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.12901982264666514433 0.0083885453814144667062 -0.013564035368159631581" rpy="3.1415926535897917837 -3.2057689836051375383e-15 -3.1415926535897571448" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/c08.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.12901982264666514433 0.0083885453814144667062 -0.013564035368159631581" rpy="3.1415926535897917837 -3.2057689836051375383e-15 -3.1415926535897571448" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/c08.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.038269822646665875576 0.032638545381417680136 0.046435964631840132011" rpy="1.5267451514876479906e-15 3.3417470151423492237e-15 3.5884533940292953197e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.038269822646665875576 0.032638545381417680136 0.046435964631840132011" rpy="1.5267451514876479906e-15 3.3417470151423492237e-15 3.5884533940292953197e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.0492301773533335707 0.044638545381421021463 0.00043596463183986911005" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.0492301773533335707 0.044638545381421021463 0.00043596463183986911005" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.090019822646665123567 0.0059385453814156108354 -0.013564035368159789441" rpy="4.766655928199448626e-15 -1.3439035240356407286 3.1194170722452698785e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/c07.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.090019822646665123567 0.0059385453814156108354 -0.013564035368159789441" rpy="4.766655928199448626e-15 -1.3439035240356407286 3.1194170722452698785e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/c07.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.10551982264666516509 0.0081385453814153130292 -0.013564035368159713113" rpy="-1.4331303847345621183e-15 -3.3306690738754672547e-15 -3.1415926535897575889" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/part_2.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.10551982264666516509 0.0081385453814153130292 -0.013564035368159713113" rpy="-1.4331303847345621183e-15 -3.3306690738754672547e-15 -3.1415926535897575889" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/part_2.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.090019822646666650123 0.049888545381415877467 -0.013564035368159726991" rpy="1.5707963267948612529 1.5707963267948934494 0" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/c02.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.090019822646666650123 0.049888545381415877467 -0.013564035368159726991" rpy="1.5707963267948612529 1.5707963267948934494 0" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/c02.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.10551982264666515121 0.0081385453814153130292 -0.013564035368159699235" rpy="-3.3439154194871900705e-15 1.4331303847345633016e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b13-t.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.10551982264666515121 0.0081385453814153130292 -0.013564035368159699235" rpy="-3.3439154194871900705e-15 1.4331303847345633016e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b13-t.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.14330676167974856772 0.055638545381425243141 -0.039590908725481058217" rpy="2.8844336259681422341 -0.049625498936387311966 1.3843611128816004641" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/a08.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.14330676167974856772 0.055638545381425243141 -0.039590908725481058217" rpy="2.8844336259681422341 -0.049625498936387311966 1.3843611128816004641" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/a08.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.0067301773533337480582 0.042638545381419312719 0.046435964631840000172" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.0067301773533337480582 0.042638545381419312719 0.046435964631840000172" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.12586744341350397658 0.008138532497790666731 -0.0092745402476707705652" rpy="4.3078174863269598053e-15 -3.1621891307225082111e-15 1.5707963267949325292" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b06.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.12586744341350397658 0.008138532497790666731 -0.0092745402476707705652" rpy="4.3078174863269598053e-15 -3.1621891307225082111e-15 1.5707963267949325292" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b06.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.041230177353335013823 0.0081385453814205033218 0.046435964631839833638" rpy="-3.3417470151423496181e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/jetson_retainer.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.041230177353335013823 0.0081385453814205033218 0.046435964631839833638" rpy="-3.3417470151423496181e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/jetson_retainer.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.038269822646662864096 -0.051361454618582318143 0.046435964631840007111" rpy="1.5267451514876479906e-15 3.3417470151423492237e-15 3.5884533940292953197e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        </visual>
+        <collision>
+        <origin xyz="0.22101359100135384295 0.0081385324977937927027 -0.038251207674764947653" rpy="3.2480448936603616627e-15 -0.26179938779914585512 3.433500897612185996e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b10-t.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.22101359100135384295 0.0081385324977937927027 -0.038251207674764947653" rpy="3.2480448936603616627e-15 -0.26179938779914585512 3.433500897612185996e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b10-t.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.090019822646665942356 0.030138545381415665636 -0.013564035368159740869" rpy="1.570796326794901665 -1.3439035240356402845 3.1070576681191467807e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/c06.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.090019822646665942356 0.030138545381415665636 -0.013564035368159740869" rpy="1.570796326794901665 -1.3439035240356402845 3.1070576681191467807e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/c06.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.13646630581735552656 0.0081385453814249129889 0.024575053151472278645" rpy="-3.1415926535897917837 -0.26179938779914635472 3.516384166099531958e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/servo.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.13646630581735552656 0.0081385453814249129889 0.024575053151472278645" rpy="-3.1415926535897917837 -0.26179938779914635472 3.516384166099531958e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/servo.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.10673017735333786837 -0.071361454618577097042 0.046435964631839493633" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.10673017735333786837 -0.071361454618577097042 0.046435964631839493633" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.041230177353335041579 0.0081385453814205033218 0.046435964631839792005" rpy="-3.0164863633966998656e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/realsense_mount.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.041230177353335041579 0.0081385453814205033218 0.046435964631839792005" rpy="-3.0164863633966998656e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/realsense_mount.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.041230177353335006885 0.0081385453814205102607 0.046435964631839847516" rpy="-3.3417470151423472515e-15 1.526745151487648385e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/camera_mount.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.041230177353335006885 0.0081385453814205102607 0.046435964631839847516" rpy="-3.3417470151423472515e-15 1.526745151487648385e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/camera_mount.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.15373017735333746603 -0.061361454618575429765 0.04343596463183935219" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.15373017735333746603 -0.061361454618575429765 0.04343596463183935219" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.0067301773533374811831 -0.061361454618580710263 0.046435964631839840577" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.0067301773533374811831 -0.061361454618580710263 0.046435964631839840577" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.050119822646664632937 0.0081385453814177832754 -0.013564035368159851891" rpy="3.3439154194872543626e-15 -1.4330867597460451378e-15 1.5707963267949325292" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b03.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.050119822646664632937 0.0081385453814177832754 -0.013564035368159851891" rpy="3.3439154194872543626e-15 -1.4330867597460451378e-15 1.5707963267949325292" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b03.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.12901982264666711497 0.064138545381414474589 -0.013564035368159574335" rpy="0.43633231299858099561 8.8446785216018959125e-15 -1.570796326794876574" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/d3542_outrunner.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.12901982264666711497 0.064138545381414474589 -0.013564035368159574335" rpy="0.43633231299858099561 8.8446785216018959125e-15 -1.570796326794876574" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/d3542_outrunner.stl"/>
+        </geometry>
+        <material name="d3542_outrunner_material">
+        <color rgba="0 0.35686274509803922461 0.32941176470588234837 1.0"/>
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.11051982264666632139 0.040138545381416090851 0.031435964631840389305" rpy="1.6011428891772994204e-15 3.3981255281114641089e-15 3.5717849562625222259e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/a01.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.11051982264666632139 0.040138545381416090851 0.031435964631840389305" rpy="1.6011428891772994204e-15 3.3981255281114641089e-15 3.5717849562625222259e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/a01.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.049230177353337428725 -0.063361454618579240994 0.0004359646318397025766" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.049230177353337428725 -0.063361454618579240994 0.0004359646318397025766" rpy="1.526745151487648385e-15 3.3417470151423492237e-15 3.5884533940292959508e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/40mm_standoff.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.041230177353335076273 0.0081385453814204963829 0.046435964631839833638" rpy="-3.3439154194871904649e-15 1.4330867597460451378e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/standoff.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.041230177353335076273 0.0081385453814204963829 0.046435964631839833638" rpy="-3.3439154194871904649e-15 1.4330867597460451378e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/standoff.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.12788017735333867542 0.0081385453814246562498 -0.0090640353681604272917" rpy="3.3439154194870453145e-15 -1.433086759746045335e-15 1.5707963267949325292" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b04.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.12788017735333867542 0.0081385453814246562498 -0.0090640353681604272917" rpy="3.3439154194870453145e-15 -1.433086759746045335e-15 1.5707963267949325292" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b04.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.090019822646663652521 -0.033611454618584168941 -0.013564035368159810258" rpy="-1.5707963267948608088 -1.5707963267948927832 0" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/c02.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.090019822646663652521 -0.033611454618584168941 -0.013564035368159810258" rpy="-1.5707963267948608088 -1.5707963267948927832 0" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/c02.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.18161669153330300963 0.0081385324977922210432 -0.038040702795254434376" rpy="1.4676123883958270544e-15 -0.26179938779914596614 3.4861785429647465616e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b11-t.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.18161669153330300963 0.0081385324977922210432 -0.038040702795254434376" rpy="1.4676123883958270544e-15 -0.26179938779914596614 3.4861785429647465616e-14" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b11-t.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.04123017735333503464 0.0081385453814205033218 0.046435964631839833638" rpy="-3.3417470151423496181e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/standoff-_copy.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.04123017735333503464 0.0081385453814205033218 0.046435964631839833638" rpy="-3.3417470151423496181e-15 1.5267451514876481878e-15 -1.5707963267948608088" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/standoff-_copy.stl"/>
+        </geometry>
+        <material name="pla_black">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.10551982264666515121 0.0081385453814153130292 -0.013564035368159713113" rpy="3.3439154194871888872e-15 -1.4330867597460451378e-15 1.5707963267949325292" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b02.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.10551982264666515121 0.0081385453814153130292 -0.013564035368159713113" rpy="3.3439154194871888872e-15 -1.4330867597460451378e-15 1.5707963267949325292" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b02.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="-0.12901982264666744804 0.072138545381414481694 -0.013564035368159532702" rpy="1.5707963267948952257 -3.2751579226442046945e-15 -3.1415926535897575889" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b09.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="-0.12901982264666744804 0.072138545381414481694 -0.013564035368159532702" rpy="1.5707963267948952257 -3.2751579226442046945e-15 -3.1415926535897575889" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b09.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0.13000840675429184423 0.008138532497790597342 -0.009274540247670853832" rpy="3.7090944556931678116e-15 -3.1325576587181193622e-15 1.5707963267949325292" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b05.stl"/>
+        </geometry>
+        </collision>
+        <visual>
+        <origin xyz="0.13000840675429184423 0.008138532497790597342 -0.009274540247670853832" rpy="3.7090944556931678116e-15 -3.1325576587181193622e-15 1.5707963267949325292" />
+        <geometry>
+        <mesh filename="package://rviz_description/meshes/b05.stl"/>
+        </geometry>
+        <material name="pla">
+        </material>
+        </visual>
       </link>
 
       <link name="base_footprint" />
-      <joint name="base_joint" type="fixed">
-             <parent link="base_link"/>
-             <child link="base_footprint"/>
-             <origin xyz="0.0 0.0 -0.0" rpy="0.0 0.0 0.0" />
-     </joint>
 
       <link name="base_laser">
         <inertial>
@@ -61,12 +687,12 @@
         </inertial>
         <collision>
           <geometry>
-            <cylinder radius="0.05" length="0.04" />
+            <cylinder radius="0.035" length="0.025" />
           </geometry>
         </collision>
         <visual>
           <geometry>
-            <cylinder radius="0.05" length="0.04" />
+            <cylinder radius="0.035" length="0.025" />
           </geometry>
           <material name="pla_black"/>
         </visual>
@@ -111,13 +737,13 @@
         </inertial>
         <visual>
           <geometry>
-            <cylinder radius="0.054" length="0.043" />
+            <mesh filename="package://rviz_description/meshes/wheel_110mm.stl"/>
           </geometry>
           <material name="rubber"/>
         </visual>
         <collision name='collision'>
           <geometry>
-            <cylinder radius="0.054" length="0.043" />
+            <mesh filename="package://rviz_description/meshes/wheel_110mm.stl"/>
           </geometry>
         </collision>
       </link>
@@ -136,13 +762,13 @@
         </inertial>
         <visual>
           <geometry>
-            <cylinder radius="0.054" length="0.043" />
+            <mesh filename="package://rviz_description/meshes/wheel_110mm.stl"/>
           </geometry>
           <material name="rubber"/>
         </visual>
         <collision name='collision'>
           <geometry>
-            <cylinder radius="0.054" length="0.043" />
+            <mesh filename="package://rviz_description/meshes/wheel_110mm.stl"/>
           </geometry>
         </collision>
       </link>
@@ -161,13 +787,13 @@
         </inertial>
         <visual>
           <geometry>
-            <cylinder radius="0.054" length="0.043" />
+            <mesh filename="package://rviz_description/meshes/wheel_110mm.stl"/>
           </geometry>
           <material name="rubber"/>
         </visual>
         <collision name='collision'>
           <geometry>
-            <cylinder radius="0.054" length="0.043" />
+            <mesh filename="package://rviz_description/meshes/wheel_110mm.stl"/>
           </geometry>
         </collision>
       </link>
@@ -186,13 +812,13 @@
         </inertial>
         <visual>
           <geometry>
-            <cylinder radius="0.054" length="0.043" />
+            <mesh filename="package://rviz_description/meshes/wheel_110mm.stl"/>
           </geometry>
           <material name="rubber" />
         </visual>
         <collision name='collision'>
           <geometry>
-            <cylinder radius="0.054" length="0.043" />
+            <mesh filename="package://rviz_description/meshes/wheel_110mm.stl"/>
           </geometry>
         </collision>
       </link>
@@ -292,8 +918,20 @@
       </link>
 
 
+      <joint name="base_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="base_footprint"/>
+        <origin xyz="0.0 0.0 -0.0" rpy="0.0 0.0 0.0" />
+     </joint>
+
+      <joint name="base_chassis_visual" type="fixed">
+        <parent link="base_link"/>
+        <child link="chassis_visual"/>
+        <origin xyz="-0.055 -0.0081385453814205033218 0.065" rpy="0.0 0.0 0.0" />
+     </joint>
+
       <joint name="lidar_sensor_joint" type="fixed">
-        <origin xyz="0.08 -0 0.18" rpy="0 0 0" />
+        <origin xyz="0.08 -0 0.20" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="base_laser" />
       </joint>
@@ -305,35 +943,35 @@
       </joint>
 
       <joint name="rear_left_wheel_joint" type="continuous">
-        <origin xyz="-0.14 0.13 0.054" rpy="-1.5707 0 0" />
+        <origin xyz="-0.14 0.1515 0.054" rpy="-1.5707 0 3.1415926" />
         <parent link="rear_left_suspension" />
         <child link="rear_left_wheel" />
         <axis xyz="0 0 1" />
       </joint>
 
       <joint name="rear_right_wheel_joint" type="continuous">
-        <origin xyz="-0.14 -0.13 0.054" rpy="-1.5707 0 0" />
+        <origin xyz="-0.14 -0.1515 0.054" rpy="-1.5707 0 0" />
         <parent link="rear_right_suspension" />
         <child link="rear_right_wheel" />
         <axis xyz="0 0 1" />
       </joint>
 
       <joint name="front_left_wheel_joint" type="continuous">
-        <origin xyz="-0 0.02 0" rpy="-1.5707 0 0" />
+        <origin xyz="-0 0.0415 0" rpy="-1.5707 0 3.1415926" />
         <parent link="front_left_hub" />
         <child link="front_left_wheel" />
         <axis xyz="0 0 1" />
       </joint>
 
       <joint name="front_right_wheel_joint" type="continuous">
-        <origin xyz="-0 -0.02 0" rpy="-1.5707 0 0" />
+        <origin xyz="-0 -0.0415 0" rpy="-1.5707 0 0" />
         <parent link="front_right_hub" />
         <child link="front_right_wheel" />
         <axis xyz="0 0 1" />
       </joint>
 
       <joint name="front_left_hub_joint" type="revolute">
-        <origin xyz="0.14 0.11 0.054" rpy="0 0 0" />
+        <origin xyz="0.13 0.11 0.054" rpy="0 0 0" />
         <limit effort="1000." upper="0.5" lower="-0.5" velocity="5.0" />
         <parent link="front_left_suspension" />
         <child link="front_left_hub" />
@@ -341,7 +979,7 @@
       </joint>
 
       <joint name="front_right_hub_joint" type="revolute">
-        <origin xyz="0.14 -0.11 0.054" rpy="0 0 0" />
+        <origin xyz="0.13 -0.11 0.054" rpy="0 0 0" />
         <limit effort="1000." upper="0.5" lower="-0.5" velocity="5.0" />
         <parent link="front_right_suspension" />
         <child link="front_right_hub" />

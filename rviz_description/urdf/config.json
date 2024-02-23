@@ -1,0 +1,7 @@
+{
+    "documentId": "b89486156b7407bf86c4309d",
+    "assemblyName": "FULL ASSEMBLY",
+    "outputFormat": "urdf",
+    "useScads": true,
+    "drawCollisions": true,
+}

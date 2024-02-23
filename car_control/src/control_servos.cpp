@@ -117,7 +117,7 @@ public:
     declare_parameter("gear_ratio", 5.);
     declare_parameter("max_rpm", 16095.);
     declare_parameter("steer_angle_range", 1.0);
-    declare_parameter("max_decel_multiplier", 0.8);
+    declare_parameter("max_decel_multiplier", 1.0);
     declare_parameter("max_decel_offset", 0.1);
     declare_parameter("target_speed_multiplier", 1.1);
     declare_parameter("target_speed_offset", 1.0);
