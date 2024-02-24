@@ -233,6 +233,10 @@ private:
     angles[1] = gyro_angles[1];
     angles[2] = (gyro_angles[2] * (1. - alpha)) + (accel_angles[2] * alpha);
 
+    // RCLCPP_INFO(this->get_logger(), "raw_accel[0]: %f", raw_accel[0]);
+    // RCLCPP_INFO(this->get_logger(), "raw_accel[1]: %f", raw_accel[1]);
+    // RCLCPP_INFO(this->get_logger(), "raw_accel[2]: %f", raw_accel[2]);
+
     // Calculate current forward velocity based on gyro angles and accel
     linear_accel = (raw_accel[1] * sin(angles[1])) + (raw_accel[2] * cos(angles[1]));
     // vertical_accel = ((raw_accel[0] * cos(angles[0]) * sin(angles[2])) + (raw_accel[1] * cos(angles[0]) * cos(angles[2])) + (-raw_accel[2] * sin(angles[0]) * cos(angles[2])));
@@ -297,9 +301,15 @@ private:
   /// \brief The gyro callback function, stores data published by the IMU
   void gyro_callback(const sensor_msgs::msg::Imu & msg)
   {
-    raw_gyro[0] = msg.angular_velocity.x;
-    raw_gyro[1] = msg.angular_velocity.y;
-    raw_gyro[2] = msg.angular_velocity.z;
+    if (simulate==false) {
+      raw_gyro[0] = msg.angular_velocity.x;
+      raw_gyro[1] = msg.angular_velocity.y;
+      raw_gyro[2] = msg.angular_velocity.z;
+    } else {
+      raw_gyro[0] = msg.angular_velocity.z;
+      raw_gyro[1] = msg.angular_velocity.x;
+      raw_gyro[2] = msg.angular_velocity.y;
+    }
 
     for (int i = 0; i < 3; i++) {
         if ((raw_gyro[i] < gyro_thresh && (raw_gyro[i] > -gyro_thresh))) {
@@ -311,9 +321,15 @@ private:
   /// \brief The accel callback function, stores data published by the IMU
   void accel_callback(const sensor_msgs::msg::Imu & msg)
   {
-    raw_accel[0] = msg.linear_acceleration.x;
-    raw_accel[1] = msg.linear_acceleration.y;
-    raw_accel[2] = msg.linear_acceleration.z;
+    if (simulate==false) {
+      raw_accel[0] = msg.linear_acceleration.x;
+      raw_accel[1] = msg.linear_acceleration.y;
+      raw_accel[2] = msg.linear_acceleration.z;
+    } else {
+      raw_accel[0] = msg.linear_acceleration.z;
+      raw_accel[1] = msg.linear_acceleration.x;
+      raw_accel[2] = -msg.linear_acceleration.y;
+    }
   }
 
   /// \brief The joint_states callback function, stores the wheel speed of the rear wheels
