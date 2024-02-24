@@ -1,29 +1,49 @@
 <launch>
 
     <!-- Arguments -->
-    <arg name="simulate" default="false"/>
-    <arg name="on_robot" default="true"/>
+    <arg name="robot" default="local"/>
     <arg name="use_controller" default="true"/>
+    <arg name="controller_enabled" default="false"/>
+    <arg name="velocity_control" default="true"/>
 
-    <!-- Launch control_servos node -->
-    <node pkg="car_control" exec="control_servos">
-        <param name="simulate" value="$(var simulate)" />
-    </node>
+    <!-- Launch Realsense camera node with IMU feedback if robot==local -->
+    <include file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py"  if="$(eval '\'$(var robot)\' == \'local\'')">
+        <arg name="enable_gyro" value="true" />
+        <arg name="enable_accel" value="true" />
+    </include>
 
-    <!-- Launch odometry node if on_robot==true -->
-    <node pkg="car_control" exec="odometry" if="$(eval '\'$(var on_robot)\' == \'true\'')">
-    </node>
-
-    <!-- Launch odometry node if simulate==true -->
-    <node pkg="car_control" exec="odometry" if="$(eval '\'$(var simulate)\' == \'true\'')">
-    </node>
-    
-    <!-- Launch controller_interface node if use_controller==true -->
-    <node pkg="car_control" exec="controller_interface" if="$(eval '\'$(var use_controller)\' == \'true\'')">
+    <!-- Launch odometry node if robot==local -->
+    <node pkg="car_control" exec="odometry" if="$(eval '\'$(var robot)\' == \'local\'')">
+        <param name="simulate" value="false" />
+        <param from="$(find-pkg-share car_control)/config/params.yaml"/>
     </node>
 
-    <!-- Launch joy node if use_controller==true -->
-    <node pkg="joy" exec="joy_node" if="$(eval '\'$(var use_controller)\' == \'true\'')">
+    <!-- Launch control_servos node if robot==local -->
+    <node pkg="car_control" exec="control_servos" if="$(eval '\'$(var robot)\' == \'local\'')">
+        <param name="simulate" value="false" />
+        <param from="$(find-pkg-share car_control)/config/params.yaml"/>
     </node>
+
+    <!-- Launch odometry node if robot==simulate -->
+    <node pkg="car_control" exec="odometry" if="$(eval '\'$(var robot)\' == \'simulate\'')">
+        <param name="simulate" value="true" />
+        <param from="$(find-pkg-share car_control)/config/params.yaml"/>
+    </node>
+
+    <!-- Launch control_servos node if robot==simulate -->
+    <node pkg="car_control" exec="control_servos" if="$(eval '\'$(var robot)\' == \'simulate\'')">
+        <param name="simulate" value="true" />
+        <param from="$(find-pkg-share car_control)/config/params.yaml"/>
+    </node>
+
+    <!-- Launch velocity_control node if velocity_control==true -->
+    <node pkg="car_control" exec="velocity_control" if="$(eval '\'$(var velocity_control)\' == \'true\'')">
+        <param from="$(find-pkg-share car_control)/config/params.yaml"/>
+    </node>
+
+    <!-- Launch controller launch file of if use_controller==true -->
+    <include file="$(find-pkg-share car_control)/launch/controller.launch.xml"  if="$(eval '\'$(var use_controller)\' == \'true\'')">
+        <arg name="controller_enabled" value="$(var controller_enabled)" />
+    </include>
 
 </launch>

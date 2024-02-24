@@ -1,6 +1,0 @@
-<launch>
-    <include file="$(find-pkg-share track_mapping)/launch/manual_explore.launch.xml">
-    </include>
-    <node pkg="track_mapping" exec="map_track">
-    </node>
-</launch>

@@ -34,8 +34,8 @@ endif()
 add_executable(control_servos src/control_servos.cpp)
 ament_target_dependencies(control_servos rclcpp std_msgs std_srvs ackermann_msgs nav_msgs)
 
-add_executable(steering_control src/steering_control.cpp)
-ament_target_dependencies(steering_control rclcpp std_msgs geometry_msgs nav_msgs)
+add_executable(velocity_control src/velocity_control.cpp)
+ament_target_dependencies(velocity_control rclcpp std_msgs geometry_msgs nav_msgs)
 
 add_executable(controller_interface src/controller_interface.cpp)
 ament_target_dependencies(controller_interface rclcpp std_msgs sensor_msgs std_srvs)
@@ -46,21 +46,18 @@ ament_target_dependencies(odometry rclcpp geometry_msgs sensor_msgs nav_msgs std
 add_executable(steering_test src/steering_test.cpp)
 ament_target_dependencies(steering_test rclcpp geometry_msgs)
 
-add_executable(drag_race src/drag_race.cpp)
-ament_target_dependencies(drag_race rclcpp std_msgs geometry_msgs nav_msgs std_srvs)
-
 install(TARGETS
   control_servos
-  steering_control
+  velocity_control
   controller_interface
   odometry
   steering_test
-  drag_race
   DESTINATION lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY
   launch
+  config
   DESTINATION share/${PROJECT_NAME}/
 )
 

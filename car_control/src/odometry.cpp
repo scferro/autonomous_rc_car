@@ -134,12 +134,12 @@ public:
     linear_accel = 0.0;
     angular_vel = 0.0;
     angle_prev = 0.;
-    raw_accel[0] = 0.0;
-    raw_accel[1] = 0.0;
-    raw_accel[2] = 0.0;
-    raw_gyro[0] = 0.0;
-    raw_gyro[1] = 0.0;
-    raw_gyro[2] = 0.0;
+    raw_accel[0] = 0.00001;
+    raw_accel[1] = 0.00001;
+    raw_accel[2] = 0.00001;
+    raw_gyro[0] = 0.00001;
+    raw_gyro[1] = 0.00001;
+    raw_gyro[2] = 0.00001;
     angles[0] = 0.0;
     angles[1] = 0.0;
     angles[2] = 0.0;
@@ -234,7 +234,7 @@ private:
     angles[2] = (gyro_angles[2] * (1. - alpha)) + (accel_angles[2] * alpha);
 
     // Calculate current forward velocity based on gyro angles and accel
-    linear_accel = (-raw_accel[1] * sin(angles[0])) + (raw_accel[2] * cos(angles[0]));
+    linear_accel = (raw_accel[1] * sin(angles[1])) + (raw_accel[2] * cos(angles[1]));
     // vertical_accel = ((raw_accel[0] * cos(angles[0]) * sin(angles[2])) + (raw_accel[1] * cos(angles[0]) * cos(angles[2])) + (-raw_accel[2] * sin(angles[0]) * cos(angles[2])));
 
     // Find current linear and angular velocity
@@ -332,12 +332,6 @@ private:
     linear_accel = 0.0;
     angular_vel = 0.0;
     angle_prev = 0.;
-    raw_accel[0] = 0.0;
-    raw_accel[1] = 0.0;
-    raw_accel[2] = 0.0;
-    raw_gyro[0] = 0.0;
-    raw_gyro[1] = 0.0;
-    raw_gyro[2] = 0.0;
     angles[0] = 0.0;
     angles[1] = 0.0;
     angles[2] = 0.0;

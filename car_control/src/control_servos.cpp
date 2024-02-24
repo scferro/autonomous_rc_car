@@ -6,8 +6,8 @@
 ///     cmd_max (int): the maximum command from servo driver
 ///     cmd_min (int): the minimum command from servo driver
 ///     timeout (double): minimum time required between receiving commands
-///     steer_left_max (int): maximum steering servo command
-///     steer_right_max (int): minimum steering servo command
+///     steer_cmd_center (int): steering command for centered steering
+///     steer_cmd_range (int): steering command range. lock to lock
 ///     enable_drive (bool): allow publishing drive commands
 ///     use_traction_control (bool): enables traction control
 ///     simulate (bool): publish commands for isaacsim simulation
@@ -127,8 +127,8 @@ public:
     declare_parameter("cmd_max", 2000);
     declare_parameter("cmd_min", 1000);
     declare_parameter("timeout", 1.);
-    declare_parameter("steer_left_max", 1750);
-    declare_parameter("steer_right_max", 1250);
+    declare_parameter("steer_cmd_center", 1500);
+    declare_parameter("steer_cmd_range", 500);
     declare_parameter("enable_drive", true);
     declare_parameter("use_traction_control", false);
     declare_parameter("simulate", true);
@@ -137,7 +137,7 @@ public:
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("gear_ratio", 5.);
     declare_parameter("max_rpm", 16095.);
-    declare_parameter("steer_angle_range", 1.0);
+    declare_parameter("steer_angle_range", 0.8);
     declare_parameter("max_decel_multiplier", 1.0);
     declare_parameter("max_decel_offset", 0.1);
     declare_parameter("target_speed_multiplier", 1.1);
@@ -151,8 +151,8 @@ public:
     cmd_max = get_parameter("cmd_max").as_int();
     cmd_min = get_parameter("cmd_min").as_int();
     timeout = get_parameter("timeout").as_double();
-    steer_left_max = get_parameter("steer_left_max").as_int();
-    steer_right_max = get_parameter("steer_right_max").as_int();
+    steer_cmd_center = get_parameter("steer_cmd_center").as_int();
+    steer_cmd_range = get_parameter("steer_cmd_range").as_int();
     enable_drive = get_parameter("enable_drive").as_bool();
     drive_pin = get_parameter("drive_pin").as_int();
     steer_pin = get_parameter("steer_pin").as_int();
@@ -171,10 +171,9 @@ public:
     Kd = get_parameter("Kd").as_double();
 
     // Define other variables
-    default_steering_cmd = (steer_left_max + steer_right_max) / 2;
-    default_drive_cmd = (cmd_max + cmd_min) / 2;
-    steering_cmd = default_steering_cmd;
-    drive_cmd = default_drive_cmd;
+    drive_cmd_neutral = (cmd_max + cmd_min) / 2;
+    steering_cmd = steer_cmd_center;
+    drive_cmd = drive_cmd_neutral;
     now = this->get_clock()->now();
     time_now = now.seconds() + (now.nanoseconds() * 0.000000001);
     time_last_steer = time_now;
@@ -188,6 +187,8 @@ public:
     speed_error_prev = 0.;
     speed_error_der = 0.;
     max_decel = 0.;
+    speed_factor = (max_rpm * 2 * 3.1415926 * (wheel_diameter / 2) / (60 * gear_ratio)) / ((cmd_max - cmd_min) / 2);
+    steering_factor = steer_angle_range / steer_cmd_range;
 
     // Subscribers
     steering_cmd_sub = create_subscription<std_msgs::msg::Int32>(
@@ -233,9 +234,8 @@ public:
 
     // Run startup then set motor commands to neutral
     if (simulate==false) {
-      // motor_startup();
-      setPWM(fd, 0, 0, convert_microsec(default_drive_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
-      setPWM(fd, 1, 0, convert_microsec(default_steering_cmd)); // 307 corresponds to approximately 1.5ms pulse width at 50H
+      setPWM(fd, 0, 0, convert_microsec(drive_cmd_neutral)); // 307 corresponds to approximately 1.5ms pulse width at 50Hz
+      setPWM(fd, 1, 0, convert_microsec(steer_cmd_center)); // 307 corresponds to approximately 1.5ms pulse width at 50H
     }
   }
 
@@ -243,9 +243,9 @@ private:
   // Initialize parameter variables
   int rate;
   double loop_rate, timeout;
-  int cmd_max, cmd_min, steering_cmd, drive_cmd, default_steering_cmd, default_drive_cmd;
+  int cmd_max, cmd_min, steering_cmd, drive_cmd, drive_cmd_neutral;
   double time_now, time_last_steer, time_last_drive;
-  int steer_left_max, steer_right_max;
+  int steer_cmd_center, steer_cmd_range;
   rclcpp::Time now;
   const char *device;
   int fd, pwm;
@@ -257,6 +257,7 @@ private:
   double speed_encoder, speed;
   double speed_error, speed_error_cum, speed_error_prev, speed_error_der;
   double target_speed_offset, target_speed_multiplier;
+  double speed_factor, steering_factor;
 
   // Initialize subscriptions and timer
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr steering_cmd_sub;
@@ -279,13 +280,13 @@ private:
     // time_now = now.seconds() + (now.nanoseconds() * 0.000000001);
     // if (((time_now - time_last_steer) > timeout) || ((time_now - time_last_drive) > timeout)) {
     //   RCLCPP_DEBUG(this->get_logger(), "Either no steering or no drive command received within last %f seconds. Timeout.", timeout);
-    //   steering_cmd = default_steering_cmd;
-    //   drive_cmd = default_drive_cmd;
+    //   steering_cmd = steer_cmd_center;
+    //   drive_cmd = drive_cmd_neutral;
     // }
 
     // If in enable_drive is set to false, reset drive command to neutral
     if (enable_drive==false) {
-      drive_cmd = default_drive_cmd;
+      drive_cmd = drive_cmd_neutral;
     }
 
     // Write servo commands
@@ -303,7 +304,7 @@ private:
     double target_speed;
 
     // If car is being commanded forward
-    if (drive_cmd >= default_drive_cmd) {
+    if (drive_cmd >= drive_cmd_neutral) {
       // Calculate target speed
       target_speed = (speed * target_speed_multiplier) + target_speed_offset;
 
@@ -320,7 +321,7 @@ private:
       // Use PID to calculate correction for drive command if wheels spinning
       if (speed_encoder > target_speed){
         drive_cmd += -((Kp * speed_error) + (Ki * speed_error_cum) + (Kd * speed_error_der));
-        if (drive_cmd < default_drive_cmd) {drive_cmd = default_drive_cmd;}
+        if (drive_cmd < drive_cmd_neutral) {drive_cmd = drive_cmd_neutral;}
         RCLCPP_INFO(this->get_logger(), "TCS: %i", drive_cmd);
       }
     }
@@ -330,19 +331,17 @@ private:
   void publish_ackermann()
   {
     ackermann_msgs::msg::AckermannDriveStamped ackermann_cmd;
-    double speed_factor, steering_factor, speed_sim, steering_angle;
+    double speed_sim, steering_angle;
     
     // Convert command messages to robot commands using robot data
-    speed_factor = (max_rpm * 2 * 3.1415926 * (wheel_diameter / 2) / (60 * gear_ratio)) / ((cmd_max - cmd_min) / 2);
-    steering_factor = steer_angle_range / abs(steer_left_max - steer_right_max);
-    speed_sim = speed_factor * (drive_cmd - default_drive_cmd);
-    steering_angle = steering_factor * (steering_cmd - default_steering_cmd);
+    speed_sim = speed_factor * (drive_cmd - drive_cmd_neutral);
+    steering_angle = steering_factor * (steering_cmd - steer_cmd_center);
 
     max_decel = pow(speed_last, 2) * max_decel_multiplier + max_decel_offset;
 
-    RCLCPP_INFO(this->get_logger(), "max_decel: %f", max_decel);
-    RCLCPP_INFO(this->get_logger(), "speed1: %f", speed_sim);
-    RCLCPP_INFO(this->get_logger(), "speed_last_prev: %f", speed_last);
+    // RCLCPP_INFO(this->get_logger(), "max_decel: %f", max_decel);
+    // RCLCPP_INFO(this->get_logger(), "speed1: %f", speed_sim);
+    // RCLCPP_INFO(this->get_logger(), "speed_last_prev: %f", speed_last);
 
     // Adjust speed if slowing down 
     if ((speed_sim >= 0.) && (speed_last >= 0.)){
@@ -373,10 +372,10 @@ private:
     rclcpp::Time time;
 
     // Constrain command to valid range
-    if (msg.data > steer_left_max) {
-      steering_cmd = steer_left_max;
-    } else if (msg.data < steer_right_max) {
-      steering_cmd = steer_right_max;
+    if (msg.data > (steer_cmd_center + (steer_cmd_range / 2))) {
+      steering_cmd = (steer_cmd_center + (steer_cmd_range / 2));
+    } else if (msg.data < (steer_cmd_center - (steer_cmd_range / 2))) {
+      steering_cmd = (steer_cmd_center - (steer_cmd_range / 2));
     } else {
       steering_cmd = msg.data;
     }
@@ -402,27 +401,6 @@ private:
     // Get time
     time = this->get_clock()->now();
     time_last_drive = time.seconds() + (time.nanoseconds() * 0.000000001);
-  }
-
-  /// \brief ESC startup, sends a pulse of servo commands at startup to initialize ESC
-  void motor_startup()
-  {
-    int step, microsec, microsec_max, microsec_min;
-    step = 5;
-    microsec_min = 1500;
-    microsec_max = 1700;
-    microsec = microsec_min;
-
-    while (microsec >= microsec_min) {
-        microsec += step;
-        if (microsec==microsec_max) {
-            step = -step;
-        }
-        pwm = convert_microsec(microsec);
-        setPWM(fd, 0, 0, pwm);
-        setPWM(fd, 1, 0, pwm);
-        delayMicroseconds(50000);
-    }
   }
 
   /// \brief Callback for the enable drive server, enables/disables motors

@@ -1,0 +1,20 @@
+<launch>
+
+    <!-- Arguments -->
+    <arg name="robot" default="local"/>
+
+    <!-- Launch odometry node if robot==local -->
+    <node pkg="racing" exec="drag_race">
+        <param from="$(find-pkg-share car_control)/config/params.yaml"/>
+        <param name="race_time" value="5." />
+    </node>
+
+    <!-- Launch controller launch file of if use_controller==true -->
+    <include file="$(find-pkg-share car_control)/launch/drive_car.launch.xml">
+        <arg name="robot" value="$(var robot)" />
+        <arg name="use_controller" value="true" />
+        <arg name="controller_enabled" value="false" />
+        <arg name="velocity_control" value="true" />
+    </include>
+
+</launch>

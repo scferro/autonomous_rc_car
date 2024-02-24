@@ -24,6 +24,7 @@
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_srvs/srv/set_bool.hpp"
+#include "std_srvs/srv/empty.hpp"
 
 using namespace std::chrono_literals;
 
@@ -88,8 +89,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_drive_cli;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr imu_reset_cli;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr start_race_cli;
+  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr imu_reset_cli;
+  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr start_race_cli;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enable_controller_srv;
   rclcpp::TimerBase::SharedPtr main_timer;
 
@@ -107,8 +108,6 @@ private:
       drive_cmd_pub->publish(drive_msg);
       steering_cmd_pub->publish(steer_msg);
     }
-
-    //RCLCPP_INFO(this->get_logger(), "REV COUNTER: %f RPM", (motor_speed * 60 / (2 * 3.1415926)));
   }
 
   /// \brief The joystick callback function, calculates servo commands from the controller inputs
@@ -117,6 +116,7 @@ private:
     double fwd_input, rev_input, steer_input, drive_input;
     bool enable_drive_cmd;
     auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
+    auto request_empty = std::make_shared<std_srvs::srv::Empty::Request>();
 
     // Get drive and steeing inputs from controller
     fwd_input = msg.axes[5];
@@ -138,14 +138,14 @@ private:
     if (msg.buttons[0]==1) {
       request->data = true;
       enable_drive_cmd = true;
-      RCLCPP_INFO(this->get_logger(), "Enabling drive motor.");
+      RCLCPP_INFO(this->get_logger(), "Drive motor enabled.");
     } else if (msg.buttons[1]==1) {
       request->data = false;
       enable_drive_cmd = true;
-      RCLCPP_INFO(this->get_logger(), "Disabling drive motor.");
+      RCLCPP_INFO(this->get_logger(), "Drive motor disabled.");
     }
 
-    // If mode button pressed, change disable drive
+    // If enable driver button pressed, enable drive
     if (enable_drive_cmd==true) {
       int count = 0;
       while ((!enable_drive_cli->wait_for_service(1s)) && (count < 5)) {
@@ -158,31 +158,33 @@ private:
 
     // Check if enable_controller buttons are pressed
     if (msg.buttons[5]==1) {
-      RCLCPP_INFO(this->get_logger(), "Enabling controller.");
+      RCLCPP_INFO(this->get_logger(), "Controller enabled.");
       enable_controller = true;
     } else if (msg.buttons[4]==1) {
-      RCLCPP_INFO(this->get_logger(), "Disabling controller.");
+      RCLCPP_INFO(this->get_logger(), "Controller disabled.");
       enable_controller = false;
     }
 
     // If reset_imu button is press, call reset IMU service
     if (msg.buttons[3]==1) {
       int count = 0;
-      while ((!reset_imu_cli->wait_for_service(1s)) && (count < 5)) {
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Resetting IMU...");
+      while ((!imu_reset_cli->wait_for_service(1s)) && (count < 5)) {
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for reset_imu service...");
         count++;
       }
-      auto result = reset_imu_cli->async_send_request(request);
+      auto result = imu_reset_cli->async_send_request(request_empty);
     }
 
     // If start_race button is press, call start_race service
     if (msg.buttons[2]==1) {
       int count = 0;
-      while ((!reset_imu_cli->wait_for_service(1s)) && (count < 5)) {
-        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for reset_imu service...");
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Starting race...");
+      while ((!start_race_cli->wait_for_service(1s)) && (count < 5)) {
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for start_race service...");
         count++;
       }
-      auto result = reset_imu_cli->async_send_request(request);
+      auto result = start_race_cli->async_send_request(request_empty);
     }
   }
 
