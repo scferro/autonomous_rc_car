@@ -3,8 +3,8 @@
     wheel_diameter: 0.108
     cmd_max: 2000
     cmd_min: 1000
-    steer_cmd_center: 1500
-    steer_cmd_range: 500
+    steer_cmd_center: 1530
+    steer_cmd_range: 600
     gear_ratio: 5.
     max_rpm: 16095.
     steer_angle_range: 0.8
