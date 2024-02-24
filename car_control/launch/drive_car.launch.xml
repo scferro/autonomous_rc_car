@@ -46,7 +46,7 @@
 
     <!-- Launch controller launch file of if use_controller==true -->
     <include file="$(find-pkg-share car_control)/launch/controller.launch.xml"  if="$(eval '\'$(var use_controller)\' == \'true\'')">
-        <arg name="controller_enabled" value="$(var controller_enabled)" />
+        <arg name="enable_controller" value="$(var controller_enabled)" />
     </include>
 
 </launch>
