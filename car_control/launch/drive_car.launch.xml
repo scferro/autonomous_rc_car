@@ -5,6 +5,7 @@
     <arg name="use_controller" default="true"/>
     <arg name="controller_enabled" default="false"/>
     <arg name="velocity_control" default="true"/>
+    <arg name="traction_control" default="false"/>
 
     <!-- Launch Realsense camera node with IMU feedback if robot==local -->
     <include file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py"  if="$(eval '\'$(var robot)\' == \'local\'')">
@@ -22,6 +23,7 @@
     <node pkg="car_control" exec="control_servos" if="$(eval '\'$(var robot)\' == \'local\'')">
         <param name="simulate" value="false" />
         <param from="$(find-pkg-share car_control)/config/params.yaml"/>
+        <param name="use_traction_control" value="$(var traction_control)" />
     </node>
 
     <!-- Launch odometry node if robot==simulate -->
@@ -34,6 +36,7 @@
     <node pkg="car_control" exec="control_servos" if="$(eval '\'$(var robot)\' == \'simulate\'')">
         <param name="simulate" value="true" />
         <param from="$(find-pkg-share car_control)/config/params.yaml"/>
+        <param name="use_traction_control" value="$(var traction_control)" />
     </node>
 
     <!-- Launch velocity_control node if velocity_control==true -->
