@@ -7,10 +7,15 @@
     <arg name="velocity_control" default="false"/>
     <arg name="traction_control" default="false"/>
 
-    <!-- Launch Realsense camera node with IMU feedback if robot==local -->
+    <!-- Launch Realsense camera launch file with IMU feedback if robot==local -->
     <include file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py"  if="$(eval '\'$(var robot)\' == \'local\'')">
         <arg name="enable_gyro" value="true" />
         <arg name="enable_accel" value="true" />
+    </include>
+
+    <!-- Launch SLLidar launch file if robot==local -->
+    <include file="$(find-pkg-share sllidar_ros2)/launch/sllidar_a1_launch.py"  if="$(eval '\'$(var robot)\' == \'local\'')">
+        <arg name="inverted" value="true" />
     </include>
 
     <!-- Launch odometry node if robot==local -->

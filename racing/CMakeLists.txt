@@ -15,10 +15,11 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 add_executable(drag_race src/drag_race.cpp)
-ament_target_dependencies(drag_race rclcpp std_msgs geometry_msgs nav_msgs std_srvs)
+ament_target_dependencies(drag_race rclcpp std_msgs geometry_msgs nav_msgs std_srvs sensor_msgs)
 
 install(TARGETS
   drag_race

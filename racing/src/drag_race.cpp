@@ -10,6 +10,7 @@
 ///     enable_drive (std_srvs::srv::SetBool): enables/disbales drive
 
 #include <chrono>
+#include <vector>
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/u_int64.hpp"
@@ -18,6 +19,7 @@
 #include "std_srvs/srv/empty.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "sensor_msgs/msg/laser_scan.hpp"
 
 using namespace std::chrono_literals;
 
@@ -34,6 +36,11 @@ public:
     declare_parameter("max_rpm", 16095.);
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("gear_ratio", 5.);
+    declare_parameter("Kp", 5.);
+    declare_parameter("Ki", 0.);
+    declare_parameter("Kd", 0.);
+    declare_parameter("sample_size", 20);
+    declare_parameter("sample_angle", 2.09439510239);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
@@ -42,12 +49,19 @@ public:
     max_rpm = get_parameter("max_rpm").as_double();
     wheel_diameter = get_parameter("wheel_diameter").as_double();
     gear_ratio = get_parameter("gear_ratio").as_double();
+    Kp = get_parameter("Kp").as_double();
+    Ki = get_parameter("Ki").as_double();
+    Kd = get_parameter("Kd").as_double();
+    sample_size = get_parameter("sample_size").as_int();
+    sample_angle = get_parameter("sample_angle").as_int();
 
     // Other variables
     time = race_time + 1.;
     speed = 0.;
     race_on = false;
     max_speed = (max_rpm / gear_ratio) * (wheel_diameter / 2.);
+    lidar_diff_prev = 0.;
+    lidar_diff_cum = 0.;
 
     // Publishers
     cmd_vel_pub = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
@@ -56,6 +70,9 @@ public:
     odom_sub = create_subscription<nav_msgs::msg::Odometry>(
       "odom",
       10, std::bind(&Drag_Race::odom_callback, this, std::placeholders::_1));
+    laser_sub = create_subscription<sensor_msgs::msg::LaserScan>(
+      "scan",
+      10, std::bind(&Drag_Race::laser_callback, this, std::placeholders::_1));
 
     // Servers
     start_race_srv = create_service<std_srvs::srv::Empty>(
@@ -76,15 +93,19 @@ public:
 private:
   // Initialize parameter variables
   int rate;
-  double angular_velocity, race_time, loop_rate;
-  int cmd_max;
+  double race_time, loop_rate;
+  int cmd_max, sample_size;
   int state = 1;
   double time, speed;
   bool race_on;
   double max_speed, wheel_diameter, max_rpm, gear_ratio;
+  double Kp, Ki, Kd;
+  double lidar_diff_prev, lidar_diff_cum;
+  double lidar_left, lidar_right, sample_angle;
 
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr start_race_srv;
   rclcpp::Client<std_srvs::srv::Empty>::SharedPtr imu_reset_cli;
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_drive_cli;
@@ -97,11 +118,9 @@ private:
 
     if ((time < race_time) && (time >= 0)) {
       race_on = true;
-
-      // cmd_vel and servo commands
-      cmd_vel_msg.angular.z = 0.0;
+      // cmd_vel commands
+      cmd_vel_msg.angular.z = angular_from_lidar();
       cmd_vel_msg.linear.x = max_speed;
-      
       // Print current speed
       RCLCPP_INFO(this->get_logger(), "Racing! Current speed: %f", speed);
     } else if (time < 0.0) {
@@ -111,13 +130,11 @@ private:
       // send zero speed cmd_vel command
       cmd_vel_msg.angular.z = 0.0;
       cmd_vel_msg.linear.x = 0.0;
-
       // If race just ended
       if (race_on==true) {
         // Print final time
         RCLCPP_INFO(this->get_logger(), "Race over. Final speed: %f", speed);
         race_on = false;
-
         // Disable drive motor
         auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
         request->data = false;
@@ -125,6 +142,9 @@ private:
         while ((!enable_drive_cli->wait_for_service(1s)) && (count < 5)) {
           RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for enable_drive service...");
           count++;
+        // Reset PID variables
+        lidar_diff_prev = 0.;
+        lidar_diff_cum = 0.;
         }
         auto result = enable_drive_cli->async_send_request(request);
       }
@@ -136,6 +156,56 @@ private:
     // Publish commands
     cmd_vel_pub->publish(cmd_vel_msg);
     speed = 0.;
+  }
+
+  /// \brief Updates the angular velocity command based on the lidar readings
+  /// \return The new angular velocity command
+  double angular_from_lidar()
+  {
+    double lidar_diff, lidar_diff_der, angular_out;
+
+    // Calculate difference in left and right lidar reading 
+    lidar_diff = lidar_left - lidar_right;
+
+    // Find cumulative difference and derivative of difference
+    lidar_diff_cum += lidar_diff / loop_rate;
+    lidar_diff_der = lidar_diff - lidar_diff_prev;
+
+    // Store current reading
+    lidar_diff = lidar_diff_prev;
+
+    // Calculate angular_out using PID
+    angular_out = (Kp * lidar_diff) + (Ki * lidar_diff_cum) + (Kd * lidar_diff_der);
+
+    return angular_out;
+  }
+
+  /// \brief The laser callback function, the left and right lidar ranges from the scan msg
+  void laser_callback(const sensor_msgs::msg::LaserScan & msg)
+  {
+    std::vector<float> laser_ranges;
+    int left_center_index, right_center_index, sample_count;
+    double left_sum, right_sum;
+
+    // Get ranges from msg
+    laser_ranges = msg.ranges;
+    sample_count = laser_ranges.size();
+
+    // Find index to center measurements at 
+    right_center_index = sample_count * (sample_angle / 6.28318530718);
+    left_center_index = sample_count - right_center_index;
+
+    // Extract the data around the center points
+    for(int i = (right_center_index - (sample_size / 2)); i < (right_center_index + (sample_size / 2)); i++) {
+        right_sum += laser_ranges[i];
+    }
+    for(int i = (left_center_index - (sample_size / 2)); i < (left_center_index + (sample_size / 2)); i++) {
+        left_sum += laser_ranges[i];
+    }
+
+    // Average data
+    lidar_left = left_sum / sample_size;
+    lidar_right = right_sum / sample_size;
   }
 
   /// \brief The odometry callback function, extracts the current angular speed of the car
