@@ -41,7 +41,7 @@ public:
     declare_parameter("cmd_max", 2000);
     declare_parameter("cmd_min", 1000);
     declare_parameter("wheel_diameter", 0.108);
-    declare_parameter("Kp_steer", 200.0);
+    declare_parameter("Kp_steer", 1000.0);
     declare_parameter("Ki_steer", 10.0);
     declare_parameter("Kd_steer", 0.1);
     declare_parameter("Kp_drive", 5.0);
