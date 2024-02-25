@@ -17,6 +17,14 @@
     <include file="$(find-pkg-share sllidar_ros2)/launch/sllidar_a1_launch.py"  if="$(eval '\'$(var robot)\' == \'local\'')">
         <arg name="inverted" value="true" />
     </include>
+    <node pkg="sllidar_ros2" exec="sllidar_node" if="$(eval '\'$(var robot)\' == \'local\'')">
+        <param name="channel_type" value="serial" />
+        <param name="serial_port" value="/dev/ttyUSB0" />
+        <param name="serial_baudrate" value="115200" />
+        <param name="frame_id" value="laser" />
+        <param name="inverted" value="true" />
+        <param name="angle_compensate" value="true" />
+    </node>
 
     <!-- Launch odometry node if robot==local -->
     <node pkg="car_control" exec="odometry" if="$(eval '\'$(var robot)\' == \'local\'')">

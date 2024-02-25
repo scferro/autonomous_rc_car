@@ -53,7 +53,7 @@ public:
     Ki = get_parameter("Ki").as_double();
     Kd = get_parameter("Kd").as_double();
     sample_size = get_parameter("sample_size").as_int();
-    sample_angle = get_parameter("sample_angle").as_int();
+    sample_angle = get_parameter("sample_angle").as_double();
 
     // Other variables
     time = race_time + 1.;
