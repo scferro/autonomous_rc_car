@@ -36,9 +36,15 @@ public:
     declare_parameter("race_time", 5.);
     declare_parameter("max_rpm", 16095.);
     declare_parameter("wheel_diameter", 0.108);
+<<<<<<< HEAD
+    declare_parameter("gear_ratio", 1.);
+    declare_parameter("Kp", 5.);
+    declare_parameter("Ki", 0.25);
+=======
     declare_parameter("gear_ratio", 5.);
     declare_parameter("Kp", 0.2);
     declare_parameter("Ki", 0.1);
+>>>>>>> refs/remotes/origin/main
     declare_parameter("Kd", 0.);
     declare_parameter("sample_size", 20);
     declare_parameter("sample_angle", 1.0471975512);

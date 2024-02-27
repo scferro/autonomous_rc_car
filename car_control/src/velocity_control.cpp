@@ -41,8 +41,13 @@ public:
     declare_parameter("cmd_max", 2000);
     declare_parameter("cmd_min", 1000);
     declare_parameter("wheel_diameter", 0.108);
+<<<<<<< HEAD
+    declare_parameter("Kp_steer", 40.0);
+    declare_parameter("Ki_steer", 1.0);
+=======
     declare_parameter("Kp_steer", 1000.0);
     declare_parameter("Ki_steer", 10.0);
+>>>>>>> refs/remotes/origin/main
     declare_parameter("Kd_steer", 0.1);
     declare_parameter("Kp_drive", 100.0);
     declare_parameter("Ki_drive", 0.0);

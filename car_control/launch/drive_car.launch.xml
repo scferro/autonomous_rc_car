@@ -13,7 +13,7 @@
         <arg name="enable_accel" value="true" />
     </include>
 
-    <!-- Launch SLLidar launch file if robot==local -->
+    <!-- Launch SLLidar launch file if robot==local -->333333333366
     <node pkg="sllidar_ros2" exec="sllidar_node" if="$(eval '\'$(var robot)\' == \'local\'')">
         <param name="channel_type" value="serial" />
         <param name="serial_port" value="/dev/ttyUSB0" />
