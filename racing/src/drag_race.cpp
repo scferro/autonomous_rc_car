@@ -167,7 +167,6 @@ private:
 
     // Calculate difference in left and right lidar reading 
     lidar_diff = -lidar_left + lidar_right;
-    RCLCPP_INFO(this->get_logger(), "lidar_diff: %f", lidar_diff);
 
     // Find cumulative difference and derivative of difference
     lidar_diff_cum += lidar_diff / loop_rate;
@@ -178,8 +177,6 @@ private:
 
     // Calculate angular_out using PID
     angular_out = (Kp * lidar_diff) + (Ki * lidar_diff_cum) + (Kd * lidar_diff_der);
-    RCLCPP_INFO(this->get_logger(), "angular_out: %f", angular_out);
-
     return angular_out;
   }
 

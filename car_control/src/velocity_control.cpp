@@ -44,7 +44,7 @@ public:
     declare_parameter("Kp_steer", 1000.0);
     declare_parameter("Ki_steer", 10.0);
     declare_parameter("Kd_steer", 0.1);
-    declare_parameter("Kp_drive", 5.0);
+    declare_parameter("Kp_drive", 100.0);
     declare_parameter("Ki_drive", 0.0);
     declare_parameter("Kd_drive", 0.0);
     
@@ -122,7 +122,7 @@ private:
     std_msgs::msg::Int32 drive_msg;
 
     // Calculate error, integral/cumulative error, derivative of error
-    angular_error = angular_vel - angular_vel_cmd;
+    angular_error = angular_vel_cmd - angular_vel;
     angular_error_cum += angular_error * (1.0 / loop_rate);
     angular_error_der = (angular_error - angular_error_prev) / (1.0 / loop_rate);
     linear_error = linear_vel_cmd - linear_vel;
@@ -130,7 +130,7 @@ private:
     linear_error_der = (linear_error - linear_error_prev) / (1.0 / loop_rate);
 
     // Calculate steering command with PID
-    steer_cmd = (Kp_steer * angular_error) + (Ki_steer * angular_error_cum) + (Kd_steer * angular_error_der) + 1500;
+    steer_cmd = -((Kp_steer * angular_error) + (Ki_steer * angular_error_cum) + (Kd_steer * angular_error_der)) + 1500;
     drive_cmd = (Kp_drive * linear_error) + (Ki_drive * linear_error_cum) + (Kd_drive * linear_error_der) + 1500;
 
     // Limit servo commands and add to message

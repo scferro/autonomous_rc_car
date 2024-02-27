@@ -34,6 +34,7 @@
         <param name="simulate" value="false" />
         <param from="$(find-pkg-share car_control)/config/params.yaml"/>
         <param name="use_traction_control" value="$(var traction_control)" />
+        <param name="enable_drive" value="false" />
     </node>
 
     <!-- Launch odometry node if robot==simulate -->
@@ -47,6 +48,7 @@
         <param name="simulate" value="true" />
         <param from="$(find-pkg-share car_control)/config/params.yaml"/>
         <param name="use_traction_control" value="$(var traction_control)" />
+        <param name="enable_drive" value="false" />
     </node>
 
     <!-- Launch velocity_control node if velocity_control==true -->
