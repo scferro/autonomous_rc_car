@@ -11,6 +11,7 @@
 
 #include <chrono>
 #include <vector>
+#include <cmath>
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/u_int64.hpp"
@@ -35,12 +36,18 @@ public:
     declare_parameter("race_time", 5.);
     declare_parameter("max_rpm", 16095.);
     declare_parameter("wheel_diameter", 0.108);
+<<<<<<< HEAD
     declare_parameter("gear_ratio", 1.);
     declare_parameter("Kp", 5.);
     declare_parameter("Ki", 0.25);
+=======
+    declare_parameter("gear_ratio", 5.);
+    declare_parameter("Kp", 0.2);
+    declare_parameter("Ki", 0.1);
+>>>>>>> refs/remotes/origin/main
     declare_parameter("Kd", 0.);
     declare_parameter("sample_size", 20);
-    declare_parameter("sample_angle", 2.09439510239);
+    declare_parameter("sample_angle", 1.0471975512);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
@@ -122,7 +129,7 @@ private:
       cmd_vel_msg.angular.z = angular_from_lidar();
       cmd_vel_msg.linear.x = max_speed;
       // Print current speed
-      RCLCPP_INFO(this->get_logger(), "Racing! Current speed: %f", speed);
+      //RCLCPP_INFO(this->get_logger(), "Racing! Current speed: %f", speed);
     } else if (time < 0.0) {
       // Print countdown 
       RCLCPP_INFO(this->get_logger(), "Countdown: %f", -time);
@@ -165,17 +172,19 @@ private:
     double lidar_diff, lidar_diff_der, angular_out;
 
     // Calculate difference in left and right lidar reading 
-    lidar_diff = lidar_left - lidar_right;
+    lidar_diff = -lidar_left + lidar_right;
+    RCLCPP_INFO(this->get_logger(), "lidar_diff: %f", lidar_diff);
 
     // Find cumulative difference and derivative of difference
     lidar_diff_cum += lidar_diff / loop_rate;
     lidar_diff_der = lidar_diff - lidar_diff_prev;
 
     // Store current reading
-    lidar_diff = lidar_diff_prev;
+    lidar_diff_prev = lidar_diff;
 
     // Calculate angular_out using PID
     angular_out = (Kp * lidar_diff) + (Ki * lidar_diff_cum) + (Kd * lidar_diff_der);
+    RCLCPP_INFO(this->get_logger(), "angular_out: %f", angular_out);
 
     return angular_out;
   }
@@ -186,6 +195,10 @@ private:
     std::vector<float> laser_ranges;
     int left_center_index, right_center_index, sample_count;
     double left_sum, right_sum;
+    int samples_left, samples_right;
+
+    samples_left = sample_size;
+    samples_right = sample_size;
 
     // Get ranges from msg
     laser_ranges = msg.ranges;
@@ -197,15 +210,23 @@ private:
 
     // Extract the data around the center points
     for(int i = (right_center_index - (sample_size / 2)); i < (right_center_index + (sample_size / 2)); i++) {
+      if (!std::isinf(laser_ranges[i])) {
         right_sum += laser_ranges[i];
+      } else {
+        samples_right += -1;
+      }
     }
     for(int i = (left_center_index - (sample_size / 2)); i < (left_center_index + (sample_size / 2)); i++) {
+      if (!std::isinf(laser_ranges[i])) {
         left_sum += laser_ranges[i];
+      } else {
+        samples_left += -1;
+      }
     }
 
     // Average data
-    lidar_left = left_sum / sample_size;
-    lidar_right = right_sum / sample_size;
+    lidar_left = left_sum / samples_left;
+    lidar_right = right_sum / samples_right;
   }
 
   /// \brief The odometry callback function, extracts the current angular speed of the car
