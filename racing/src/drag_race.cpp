@@ -36,18 +36,13 @@ public:
     declare_parameter("race_time", 5.);
     declare_parameter("max_rpm", 16095.);
     declare_parameter("wheel_diameter", 0.108);
-<<<<<<< HEAD
-    declare_parameter("gear_ratio", 1.);
-    declare_parameter("Kp", 5.);
-    declare_parameter("Ki", 0.25);
-=======
     declare_parameter("gear_ratio", 5.);
     declare_parameter("Kp", 0.2);
     declare_parameter("Ki", 0.1);
->>>>>>> refs/remotes/origin/main
     declare_parameter("Kd", 0.);
     declare_parameter("sample_size", 20);
     declare_parameter("sample_angle", 1.0471975512);
+    declare_parameter("ramp_time", 1.0);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
@@ -61,6 +56,7 @@ public:
     Kd = get_parameter("Kd").as_double();
     sample_size = get_parameter("sample_size").as_int();
     sample_angle = get_parameter("sample_angle").as_double();
+    ramp_time = get_parameter("ramp_time").as_double();
 
     // Other variables
     time = race_time + 1.;
@@ -106,7 +102,7 @@ private:
   double time, speed;
   bool race_on;
   double max_speed, wheel_diameter, max_rpm, gear_ratio;
-  double Kp, Ki, Kd;
+  double Kp, Ki, Kd, ramp_time;
   double lidar_diff_prev, lidar_diff_cum;
   double lidar_left, lidar_right, sample_angle;
 
@@ -127,7 +123,11 @@ private:
       race_on = true;
       // cmd_vel commands
       cmd_vel_msg.angular.z = angular_from_lidar();
-      cmd_vel_msg.linear.x = max_speed;
+      if (time < ramp_time) {
+        cmd_vel_msg.linear.x = max_speed * (time / ramp_time);
+      } else {
+        cmd_vel_msg.linear.x = max_speed;
+      }
       // Print current speed
       //RCLCPP_INFO(this->get_logger(), "Racing! Current speed: %f", speed);
     } else if (time < 0.0) {

@@ -41,17 +41,15 @@ public:
     declare_parameter("cmd_max", 2000);
     declare_parameter("cmd_min", 1000);
     declare_parameter("wheel_diameter", 0.108);
-<<<<<<< HEAD
     declare_parameter("Kp_steer", 40.0);
     declare_parameter("Ki_steer", 1.0);
-=======
-    declare_parameter("Kp_steer", 1000.0);
-    declare_parameter("Ki_steer", 10.0);
->>>>>>> refs/remotes/origin/main
     declare_parameter("Kd_steer", 0.1);
     declare_parameter("Kp_drive", 5.0);
     declare_parameter("Ki_drive", 0.0);
     declare_parameter("Kd_drive", 0.0);
+    declare_parameter("max_rpm", 16095.);
+    declare_parameter("wheel_diameter", 0.108);
+    declare_parameter("gear_ratio", 5.);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
@@ -64,7 +62,11 @@ public:
     Kp_drive = get_parameter("Kp_drive").as_double();
     Ki_drive = get_parameter("Ki_drive").as_double();
     Kd_drive = get_parameter("Kd_drive").as_double();
+    max_rpm = get_parameter("max_rpm").as_double();
+    wheel_diameter = get_parameter("wheel_diameter").as_double();
+    gear_ratio = get_parameter("gear_ratio").as_double();
 
+    // Other variables
     cmd_neutral = (cmd_min + cmd_max) / 2;
     angular_vel = 0.;
     angular_vel_cmd = 0.;
@@ -80,6 +82,7 @@ public:
     linear_error_der = 0.;
     steer_cmd = 1500;
     drive_cmd = 1500;
+    max_speed = (max_rpm / gear_ratio) * (wheel_diameter / 2.);
 
     // Publishers
     steering_cmd_pub = create_publisher<std_msgs::msg::Int32>("steering_cmd", 10);
@@ -110,6 +113,7 @@ private:
   double angular_vel, angular_vel_cmd, linear_vel, linear_vel_cmd;
   double angular_error, angular_error_prev, angular_error_cum, angular_error_der;
   double linear_error, linear_error_prev, linear_error_cum, linear_error_der;
+  double max_speed, wheel_diameter, max_rpm, gear_ratio;
   rclcpp::Time now;
   
   // Create ROS publishers, timers, broadcasters, etc.
@@ -130,13 +134,10 @@ private:
     angular_error = angular_vel - angular_vel_cmd;
     angular_error_cum += angular_error * (1.0 / loop_rate);
     angular_error_der = (angular_error - angular_error_prev) / (1.0 / loop_rate);
-    linear_error = linear_vel_cmd - linear_vel;
-    linear_error_cum += linear_error * (1.0 / loop_rate);
-    linear_error_der = (linear_error - linear_error_prev) / (1.0 / loop_rate);
 
     // Calculate steering command with PID
     steer_cmd = (Kp_steer * angular_error) + (Ki_steer * angular_error_cum) + (Kd_steer * angular_error_der) + 1500;
-    drive_cmd = (Kp_drive * linear_error) + (Ki_drive * linear_error_cum) + (Kd_drive * linear_error_der) + 1500;
+    drive_cmd = ((linear_vel_cmd / max_speed) * 500) + 1500;
 
     // Limit servo commands and add to message
     steer_msg.data = limit_cmd(steer_cmd);
