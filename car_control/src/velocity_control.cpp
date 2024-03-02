@@ -41,7 +41,7 @@ public:
     declare_parameter("cmd_max", 2000);
     declare_parameter("cmd_min", 1000);
     declare_parameter("wheel_diameter", 0.108);
-    declare_parameter("Kp_steer", 125.0);
+    declare_parameter("Kp_steer", 80.0);
     declare_parameter("Ki_steer", 1.0);
     declare_parameter("Kd_steer", 1.0);
     declare_parameter("Kp_drive", 100.0);
@@ -134,13 +134,8 @@ private:
     angular_error_der = (angular_error - angular_error_prev) / (1.0 / loop_rate);
 
     // Calculate steering command with PID
-<<<<<<< HEAD
     steer_cmd = -((Kp_steer * angular_error) + (Ki_steer * angular_error_cum) + (Kd_steer * angular_error_der)) + 1500;
-    drive_cmd = (Kp_drive * linear_error) + (Ki_drive * linear_error_cum) + (Kd_drive * linear_error_der) + 1500;
-=======
-    steer_cmd = (Kp_steer * angular_error) + (Ki_steer * angular_error_cum) + (Kd_steer * angular_error_der) + 1500;
     drive_cmd = ((linear_vel_cmd / max_speed) * 500) + 1500;
->>>>>>> refs/remotes/origin/main
 
     // Limit servo commands and add to message
     steer_msg.data = limit_cmd(steer_cmd);

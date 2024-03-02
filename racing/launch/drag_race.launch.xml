@@ -7,7 +7,7 @@
     <!-- Launch odometry node if robot==local -->
     <node pkg="racing" exec="drag_race">
         <param from="$(find-pkg-share car_control)/config/params.yaml"/>
-        <param name="race_time" value="2."/>
+        <param name="race_time" value="3.5"/>
     </node>
 
     <!-- Launch controller launch file of if use_controller==true -->

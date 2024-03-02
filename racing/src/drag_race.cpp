@@ -37,12 +37,12 @@ public:
     declare_parameter("max_rpm", 16095.);
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("gear_ratio", 5.);
-    declare_parameter("Kp", 5.0);
-    declare_parameter("Ki", 1.);
+    declare_parameter("Kp", 1.0);
+    declare_parameter("Ki", 0.5);
     declare_parameter("Kd", 0.25);
     declare_parameter("sample_size", 20);
     declare_parameter("sample_angle", 1.0471975512);
-    declare_parameter("ramp_time", 1.0);
+    declare_parameter("ramp_time", 1.5);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
@@ -59,7 +59,7 @@ public:
     ramp_time = get_parameter("ramp_time").as_double();
 
     // Other variables
-    time = race_time + 1.;
+    time = race_time + 10.;
     speed = 0.;
     race_on = false;
     max_speed = (max_rpm / gear_ratio) * (wheel_diameter / 2.);
@@ -133,9 +133,12 @@ private:
     } else if (time < 0.0) {
       // Print countdown 
       RCLCPP_INFO(this->get_logger(), "Countdown: %f", -time);
-    } else {
+      lidar_diff_prev = 0.;
+      lidar_diff_cum = 0.;
+    } else if ((time >= race_time) && (time < (race_time + 5.0))) {
+      // for two seconds after race ends, keep stering the car away from walls
       // send zero speed cmd_vel command
-      cmd_vel_msg.angular.z = 0.0;
+      cmd_vel_msg.angular.z = angular_from_lidar();
       cmd_vel_msg.linear.x = 0.0;
       // If race just ended
       if (race_on==true) {
@@ -155,6 +158,10 @@ private:
         }
         auto result = enable_drive_cli->async_send_request(request);
       }
+    } else {
+      // send zero speed cmd_vel command
+      cmd_vel_msg.angular.z = angular_from_lidar();
+      cmd_vel_msg.linear.x = 0.0;
     }
 
     // update time

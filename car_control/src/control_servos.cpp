@@ -130,7 +130,7 @@ public:
     declare_parameter("steer_cmd_center", 1500);
     declare_parameter("steer_cmd_range", 500);
     declare_parameter("enable_drive", true);
-    declare_parameter("use_traction_control", false);
+    declare_parameter("use_traction_control", true);
     declare_parameter("simulate", true);
     declare_parameter("drive_pin", 0);
     declare_parameter("steer_pin", 1);
@@ -141,10 +141,10 @@ public:
     declare_parameter("max_decel_multiplier", 1.0);
     declare_parameter("max_decel_offset", 0.1);
     declare_parameter("target_speed_multiplier", 1.01);
-    declare_parameter("target_speed_offset", 0.5);
-    declare_parameter("Kp", 95.0);
+    declare_parameter("target_speed_offset", 0.45);
+    declare_parameter("Kp", 60.0);
     declare_parameter("Ki", 0.1);
-    declare_parameter("Kd",0.05);
+    declare_parameter("Kd",0.06);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
@@ -317,6 +317,9 @@ private:
       speed_error = speed_encoder - target_speed;
       speed_error_cum += (speed_error / loop_rate);
       speed_error_der = (speed_error - speed_error_prev) * loop_rate;
+      // RCLCPP_INFO(this->get_logger(), "speed: %f", speed);
+      // RCLCPP_INFO(this->get_logger(), "speed_encoder: %f", speed_encoder);
+      // RCLCPP_INFO(this->get_logger(), "target_speed: %f", target_speed);
 
       // Use PID to calculate correction for drive command if wheels spinning
       if (speed_encoder > target_speed){

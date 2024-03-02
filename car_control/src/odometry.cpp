@@ -109,7 +109,7 @@ public:
   {
     // Parameters and default values
     declare_parameter("loop_rate", 100.);
-    declare_parameter("encoder_rate", 200.);
+    declare_parameter("encoder_rate", 1000.);
     declare_parameter("encoder_ticks", 8192);
     declare_parameter("gear_ratio", 5.);
     declare_parameter("wheel_diameter", 0.108);
@@ -282,9 +282,14 @@ private:
           delta = (encoder_ticks - abs(delta));
         }
       }
+      
+      if (abs(delta) < 5.) {
+        delta = 0.0;
+      }
+      // RCLCPP_INFO(this->get_logger(), "delta: %f", delta);
 
       // Calculate wheel_speed
-      wheel_speed = (delta / (encoder_ticks * gear_ratio)) * loop_rate * 6.283185307;
+      wheel_speed = -(delta / (encoder_ticks * gear_ratio)) * encoder_rate * 6.283185307;
     }
 
     // Calculate chassis speed based on wheel motor
