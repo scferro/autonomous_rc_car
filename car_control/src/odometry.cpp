@@ -114,7 +114,7 @@ public:
     declare_parameter("gear_ratio", 5.);
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("alpha", 0.02);
-    declare_parameter("beta", 0.01);
+    declare_parameter("beta", 0.0);
     declare_parameter("gyro_thresh", 0.02);
     declare_parameter("simulate", true);
     

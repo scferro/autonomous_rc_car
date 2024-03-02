@@ -33,19 +33,13 @@ public:
     // Parameters and default values
     declare_parameter("rate", 100.);
     declare_parameter("cmd_max", 2000);
-    declare_parameter("race_time", 5.);
+    declare_parameter("race_time", 0.5);
     declare_parameter("max_rpm", 16095.);
     declare_parameter("wheel_diameter", 0.108);
-<<<<<<< HEAD
-    declare_parameter("gear_ratio", 1.);
-    declare_parameter("Kp", 5.);
-    declare_parameter("Ki", 0.25);
-=======
     declare_parameter("gear_ratio", 5.);
-    declare_parameter("Kp", 0.2);
-    declare_parameter("Ki", 0.1);
->>>>>>> refs/remotes/origin/main
-    declare_parameter("Kd", 0.);
+    declare_parameter("Kp", 5.0);
+    declare_parameter("Ki", 1.);
+    declare_parameter("Kd", 0.25);
     declare_parameter("sample_size", 20);
     declare_parameter("sample_angle", 1.0471975512);
 
@@ -129,7 +123,7 @@ private:
       cmd_vel_msg.angular.z = angular_from_lidar();
       cmd_vel_msg.linear.x = max_speed;
       // Print current speed
-      //RCLCPP_INFO(this->get_logger(), "Racing! Current speed: %f", speed);
+      RCLCPP_INFO(this->get_logger(), "Race Time: %f", time);
     } else if (time < 0.0) {
       // Print countdown 
       RCLCPP_INFO(this->get_logger(), "Countdown: %f", -time);

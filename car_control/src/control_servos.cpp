@@ -140,11 +140,11 @@ public:
     declare_parameter("steer_angle_range", 0.8);
     declare_parameter("max_decel_multiplier", 1.0);
     declare_parameter("max_decel_offset", 0.1);
-    declare_parameter("target_speed_multiplier", 1.1);
-    declare_parameter("target_speed_offset", 1.0);
-    declare_parameter("Kp", 50.0);
-    declare_parameter("Ki", 0.);
-    declare_parameter("Kd", 0.);
+    declare_parameter("target_speed_multiplier", 1.01);
+    declare_parameter("target_speed_offset", 0.5);
+    declare_parameter("Kp", 95.0);
+    declare_parameter("Ki", 0.1);
+    declare_parameter("Kd",0.05);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();

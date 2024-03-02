@@ -2,12 +2,12 @@
 
     <!-- Arguments -->
     <arg name="robot" default="local"/>
-    <arg name="traction_control" default="false"/>
+    <arg name="traction_control" default="true"/>
 
     <!-- Launch odometry node if robot==local -->
     <node pkg="racing" exec="drag_race">
         <param from="$(find-pkg-share car_control)/config/params.yaml"/>
-        <param name="race_time" value="5."/>
+        <param name="race_time" value="2."/>
     </node>
 
     <!-- Launch controller launch file of if use_controller==true -->
