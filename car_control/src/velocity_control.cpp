@@ -48,7 +48,6 @@ public:
     declare_parameter("Ki_drive", 0.0);
     declare_parameter("Kd_drive", 0.0);
     declare_parameter("max_rpm", 16095.);
-    declare_parameter("wheel_diameter", 0.108);
     declare_parameter("gear_ratio", 5.);
     
     // Define parameter variables
@@ -63,7 +62,6 @@ public:
     Ki_drive = get_parameter("Ki_drive").as_double();
     Kd_drive = get_parameter("Kd_drive").as_double();
     max_rpm = get_parameter("max_rpm").as_double();
-    wheel_diameter = get_parameter("wheel_diameter").as_double();
     gear_ratio = get_parameter("gear_ratio").as_double();
 
     // Other variables
@@ -113,7 +111,7 @@ private:
   double angular_vel, angular_vel_cmd, linear_vel, linear_vel_cmd;
   double angular_error, angular_error_prev, angular_error_cum, angular_error_der;
   double linear_error, linear_error_prev, linear_error_cum, linear_error_der;
-  double max_speed, wheel_diameter, max_rpm, gear_ratio;
+  double max_speed, max_rpm, gear_ratio;
   rclcpp::Time now;
   
   // Create ROS publishers, timers, broadcasters, etc.
