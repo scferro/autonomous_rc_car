@@ -6,11 +6,17 @@
     <arg name="controller_enabled" default="false"/>
     <arg name="velocity_control" default="false"/>
     <arg name="traction_control" default="false"/>
+    <arg name="use_rviz" default="false"/>
 
     <!-- Launch Realsense camera launch file with IMU feedback if robot==local -->
     <include file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py"  if="$(eval '\'$(var robot)\' == \'local\'')">
         <arg name="enable_gyro" value="true" />
         <arg name="enable_accel" value="true" />
+    </include>
+
+    <!-- Launch Rviz launch file if use_rviz==true -->
+    <include file="$(find-pkg-share rviz_description)/launch/car_rviz.launch.py"  if="$(eval '\'$(var use_rviz)\' == \'true\'')">
+        <arg name="use_jsp" value="jsp" />
     </include>
 
     <!-- Launch SLLidar launch file if robot==local -->333333333366

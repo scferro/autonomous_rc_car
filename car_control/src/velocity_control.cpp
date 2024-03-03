@@ -132,10 +132,13 @@ private:
     angular_error = angular_vel_cmd - angular_vel;
     angular_error_cum += angular_error * (1.0 / loop_rate);
     angular_error_der = (angular_error - angular_error_prev) / (1.0 / loop_rate);
+    linear_error = linear_vel_cmd - linear_vel;
+    linear_error_cum += linear_error * (1.0 / loop_rate);
+    linear_error_der = (linear_error - linear_error_prev) / (1.0 / loop_rate);
 
     // Calculate steering command with PID
     steer_cmd = -((Kp_steer * angular_error) + (Ki_steer * angular_error_cum) + (Kd_steer * angular_error_der)) + 1500;
-    drive_cmd = ((linear_vel_cmd / max_speed) * 500) + 1500;
+    drive_cmd = ((Kp_drive * linear_error) + (Ki_drive * linear_error_cum) + (Kd_drive * linear_error_der)) + 1500;
 
     // Limit servo commands and add to message
     steer_msg.data = limit_cmd(steer_cmd);
@@ -166,6 +169,11 @@ private:
   void odom_callback(const nav_msgs::msg::Odometry & msg)
   {
     angular_vel = msg.twist.twist.angular.z;
+  }
+
+  /// \brief The odometry callback function, extracts the current angular speed of the car
+  void odom_encoder_callback(const nav_msgs::msg::Odometry & msg)
+  {
     linear_vel = msg.twist.twist.linear.x;
   }
 

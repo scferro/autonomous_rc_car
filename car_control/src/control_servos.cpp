@@ -304,7 +304,7 @@ private:
     double target_speed;
 
     // If car is being commanded forward
-    if (drive_cmd >= drive_cmd_neutral) {
+    if (drive_cmd > drive_cmd_neutral) {
       // Calculate target speed
       target_speed = (speed * target_speed_multiplier) + target_speed_offset;
 

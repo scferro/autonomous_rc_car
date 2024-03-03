@@ -38,7 +38,7 @@ public:
     declare_parameter("loop_rate", 50.);
     declare_parameter("cmd_max", 2000);
     declare_parameter("cmd_min", 1000);
-    declare_parameter("enable_controller", true);
+    declare_parameter("enable_controller", false);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
