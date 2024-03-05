@@ -61,7 +61,7 @@ public:
     cmd_max = get_parameter("cmd_max").as_int();
     cmd_min = get_parameter("cmd_min").as_int();
     race_time = get_parameter("race_time").as_double();
-    race_time = get_parameter("race_distance").as_double();
+    race_distance = get_parameter("race_distance").as_double();
     max_rpm = get_parameter("max_rpm").as_double();
     wheel_diameter = get_parameter("wheel_diameter").as_double();
     gear_ratio = get_parameter("gear_ratio").as_double();
@@ -136,8 +136,7 @@ private:
   double Kp, Ki, Kd, ramp_time;
   double lidar_diff_prev, lidar_diff_cum;
   double lidar_left, lidar_right, sample_angle;
-  geometry_msgs::msg::PoseStamped goal_pose, start_pose, current_pose;
-  nav_msgs::msg::Path planned_path, race_path;
+  geometry_msgs::msg::PoseStamped current_pose;
 
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
@@ -329,27 +328,14 @@ private:
   /// \brief Create a goal pose at a specified distance from the start position
   void publish_goal_path()
   {
-    // Create tf message
-    geometry_msgs::msg::TransformStamped goal_pose_tf;
-    goal_pose_tf.header.stamp = get_clock()->now();
-    goal_pose_tf.header.frame_id = "map";
-    goal_pose_tf.child_frame_id = "goal_pose";
-    
-    // Fill out tf message
-    goal_pose_tf.transform.translation.x = race_distance;
-    goal_pose_tf.transform.translation.y = 0;
-    goal_pose_tf.transform.rotation.x = 0.;
-    goal_pose_tf.transform.rotation.y = 0.;
-    goal_pose_tf.transform.rotation.z = 0.;
-    goal_pose_tf.transform.rotation.w = 1.;
 
-    // Send tf_map_odom
-    tf_broadcaster->sendTransform(goal_pose_tf);
+    geometry_msgs::msg::PoseStamped goal_pose, start_pose;
+    nav_msgs::msg::Path planned_path;
 
     // Fill out start pose
     start_pose.header.stamp = get_clock()->now();
     start_pose.header.frame_id = "map";
-    start_pose.pose.position.x = race_distance;
+    start_pose.pose.position.x = 0.0;
     start_pose.pose.position.y = 0.0;
     start_pose.pose.position.z = 0.0;
     start_pose.pose.orientation.x = 0.;
