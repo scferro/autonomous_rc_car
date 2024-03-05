@@ -14,7 +14,7 @@
 
       <link name="base_link">
         <inertial>
-          <origin xyz="0 -0 0.1" rpy="0 -0 0"/>
+          <origin xyz="0 -0 0.11" rpy="0 -0 0"/>
           <mass value="1.2" />
           <inertia
             ixx="0.00164"
@@ -823,7 +823,7 @@
       <joint name="base_chassis_visual" type="fixed">
         <parent link="base_link"/>
         <child link="chassis_visual"/>
-        <origin xyz="-0.055 -0.0081385453814205033218 0.08" rpy="0.0 0.0 0.0" />
+        <origin xyz="-0.055 -0.0081385453814205033218 0.09" rpy="0.0 0.0 0.0" />
      </joint>
 
       <joint name="lidar_sensor_joint" type="fixed">
@@ -884,7 +884,7 @@
 
       <joint name="front_right_suspension_joint" type="prismatic">
         <origin xyz="0.0 -0.0 0.0" rpy="0 0 0" />
-        <limit effort="1000." upper="0.04" lower="0." velocity="100."/>
+        <limit effort="1000." upper="0.04" lower="0." velocity="400."/>
         <parent link="base_link" />
         <child link="front_right_suspension" />
         <axis xyz="0 0 1" />
@@ -892,7 +892,7 @@
 
       <joint name="front_left_suspension_joint" type="prismatic">
         <origin xyz="0.0 -0.0 0.0" rpy="0 0 0" />
-        <limit effort="1000." upper="0.04" lower="0." velocity="100."/>
+        <limit effort="1000." upper="0.04" lower="0." velocity="400."/>
         <parent link="base_link" />
         <child link="front_left_suspension" />
         <axis xyz="0 0 1" />
@@ -900,7 +900,7 @@
 
       <joint name="rear_right_suspension_joint" type="prismatic">
         <origin xyz="0.0 -0.0 0.0" rpy="0 0 0" />
-        <limit effort="1000." upper="0.04" lower="0." velocity="100."/>
+        <limit effort="1000." upper="0.04" lower="0." velocity="400."/>
         <parent link="base_link" />
         <child link="rear_right_suspension" />
         <axis xyz="0 0 1" />
@@ -908,7 +908,7 @@
 
       <joint name="rear_left_suspension_joint" type="prismatic">
         <origin xyz="0.0 -0.0 0.0" rpy="0 0 0" />
-        <limit effort="1000." upper="0.04" lower="0." velocity="100."/>
+        <limit effort="1000." upper="0.04" lower="0." velocity="400."/>
         <parent link="base_link" />
         <child link="rear_left_suspension" />
         <axis xyz="0 0 1" />

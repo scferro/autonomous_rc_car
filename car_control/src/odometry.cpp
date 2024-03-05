@@ -38,6 +38,12 @@
 #include "sensor_msgs/msg/joint_state.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "std_srvs/srv/empty.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_ros/transform_broadcaster.h"
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "sensor_msgs/msg/laser_scan.hpp"
 
 using namespace std::chrono_literals;
 
@@ -108,25 +114,29 @@ public:
   : Node("odometry")
   {
     // Parameters and default values
-    declare_parameter("loop_rate", 100.);
+    declare_parameter("loop_rate", 200.);
     declare_parameter("encoder_rate", 1000.);
+    declare_parameter("encoder_rate_sim", 100.);
     declare_parameter("encoder_ticks", 8192);
     declare_parameter("gear_ratio", 5.);
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("alpha", 0.02);
-    declare_parameter("beta", 0.0);
-    declare_parameter("gyro_thresh", 0.02);
+    declare_parameter("beta", 0.02);
+    declare_parameter("gyro_thresh", 0.01);
+    declare_parameter("vel_thresh", 0.01);
     declare_parameter("simulate", true);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
     encoder_rate = get_parameter("encoder_rate").as_double();
+    encoder_rate_sim = get_parameter("encoder_rate_sim").as_double();
     encoder_ticks = get_parameter("encoder_ticks").as_int();
     gear_ratio = get_parameter("gear_ratio").as_double();
     wheel_diameter = get_parameter("wheel_diameter").as_double();
     alpha = get_parameter("alpha").as_double();
     beta = get_parameter("beta").as_double();
     gyro_thresh = get_parameter("gyro_thresh").as_double();
+    vel_thresh = get_parameter("vel_thresh").as_double();
     simulate = get_parameter("simulate").as_bool();
 
     // Define other variables
@@ -142,7 +152,7 @@ public:
     raw_gyro[2] = 0.00001;
     angles[0] = 0.0;
     angles[1] = 0.0;
-    angles[2] = 0.0;
+    angles[2] = 0.0;  
     gyro_angles[0] = 0.0;
     gyro_angles[1] = 0.0;
     gyro_angles[2] = 0.0;
@@ -150,6 +160,16 @@ public:
     accel_angles[1] = 0.0;
     accel_angles[2] = 0.0;
     chassis_speed = 0.0;
+    wheel_speed_sim_prev = 0.;
+    x_pos = 0.;
+    y_pos = 0.;
+    theta = 0.;
+    theta_prev = 0.;
+
+    // Set encoder loop to a slower speed if simulating
+    if (simulate) {
+      encoder_rate = encoder_rate_sim;
+    }
 
     // Define custom QoS profile
     rclcpp::QoS custom_qos_profile(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_default));
@@ -159,6 +179,8 @@ public:
     // Publishers
     odom_pub = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
     odom_encoder_pub = create_publisher<nav_msgs::msg::Odometry>("odom_encoder", 10);
+    laser_pub = create_publisher<sensor_msgs::msg::LaserScan>("scan", 10);
+    joint_states_pub = create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
 
     // Subscribers
     accel_sub = create_subscription<sensor_msgs::msg::Imu>(
@@ -170,6 +192,9 @@ public:
     joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
       "joint_states_sim",
       10, std::bind(&Odometry::joint_states_callback, this, std::placeholders::_1));
+    laser_sim_sub = create_subscription<sensor_msgs::msg::LaserScan>(
+      "scan_sim",
+      10, std::bind(&Odometry::laser_sim_callback, this, std::placeholders::_1));
 
     // Servers
     imu_reset_srv = create_service<std_srvs::srv::Empty>(
@@ -185,6 +210,9 @@ public:
     imu_timer = this->create_wall_timer(
       std::chrono::milliseconds(cycle_time),
       std::bind(&Odometry::imu_timer_callback, this));
+      
+    // Transform broadcaster
+    tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
   }
 
 private:
@@ -194,12 +222,13 @@ private:
   double angles[3], gyro_angles[3], accel_angles[3];
   double linear_vel, linear_accel, angular_vel;
   int rate;
-  double loop_rate, encoder_rate, gear_ratio, alpha, beta;
+  double loop_rate, encoder_rate, gear_ratio, alpha, beta, encoder_rate_sim;
   int encoder_ticks;
   uint16_t angle, angle_prev;
   double delta, wheel_diameter, chassis_speed;
-  double gyro_thresh, wheel_speed_sim;
+  double gyro_thresh, wheel_speed_sim, wheel_speed_sim_prev, vel_thresh;
   bool simulate;
+  double x_pos, y_pos, theta, theta_prev;
 
   // Initialize encoder object 
   AS5048A encoder = AS5048A("/dev/spidev0.0", SPI_MODE_1, 1000000, 8); // Adjust as necessary
@@ -207,12 +236,16 @@ private:
   // Create ROS publishers, timers, broadcasters, etc.
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_encoder_pub;
+  rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr laser_pub;
+  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_states_pub;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr gyro_sub;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr accel_sub;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_sub;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sim_sub;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr imu_reset_srv;
   rclcpp::TimerBase::SharedPtr encoder_timer;
   rclcpp::TimerBase::SharedPtr imu_timer;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
 
   /// \brief The main timer callback, loop for both wheels
   void imu_timer_callback()
@@ -233,20 +266,40 @@ private:
     angles[1] = gyro_angles[1];
     angles[2] = (gyro_angles[2] * (1. - alpha)) + (accel_angles[2] * alpha);
 
+    // Normalize rotation around vertical
+    while (angles[1] > 2*3.14159265) {
+      angles[1] += -2*3.1415926;
+    }
+    while (angles[1] < 0.) {
+      angles[1] += 2*3.1415926;
+    }
+
     // RCLCPP_INFO(this->get_logger(), "raw_accel[0]: %f", raw_accel[0]);
     // RCLCPP_INFO(this->get_logger(), "raw_accel[1]: %f", raw_accel[1]);
     // RCLCPP_INFO(this->get_logger(), "raw_accel[2]: %f", raw_accel[2]);
 
     // Calculate current forward velocity based on gyro angles and accel
-    linear_accel = (raw_accel[1] * sin(angles[1])) + (raw_accel[2] * cos(angles[1]));
+    linear_accel = -(raw_accel[1] * sin(angles[0])) + (raw_accel[2] * cos(angles[0]));
     // vertical_accel = ((raw_accel[0] * cos(angles[0]) * sin(angles[2])) + (raw_accel[1] * cos(angles[0]) * cos(angles[2])) + (-raw_accel[2] * sin(angles[0]) * cos(angles[2])));
 
     // Find current linear and angular velocity
     linear_vel += linear_accel / loop_rate;
     angular_vel = raw_gyro[1];
 
-    // Blend linear_vel with chassis speed from encoder
-    linear_vel = (chassis_speed * beta) + (linear_vel * (1. - beta));
+    // Blend linear_vel with chassis speed from encoder if magnitude of 
+    // IMU speed is greater or if chassis speed close to 0
+    if ((linear_vel < chassis_speed) && (chassis_speed > 0)) {
+      linear_vel = (chassis_speed * beta/2.) + (linear_vel * (1. - beta/2.));
+    } else if ((linear_vel > chassis_speed) && (chassis_speed < 0)) {
+      linear_vel = (chassis_speed * beta/2.) + (linear_vel * (1. - beta/2.));
+    } else {
+      linear_vel = (chassis_speed * (beta)) + (linear_vel * (1. - (beta)));
+    }
+
+    // threshold linear velocity
+    if ((linear_vel < vel_thresh) && (linear_vel > -vel_thresh)) {
+      linear_vel = 0.;
+    }
 
     // Add velocities to twist message
     odom_msg.twist.twist.linear.x = linear_vel;
@@ -257,6 +310,9 @@ private:
 
     // Publish odom_msg
     odom_pub->publish(odom_msg);
+
+    // Publish base link to odom tf
+    publish_odom_tf();
   }
 
   /// \brief The main timer callback, updates diff_drive state and publishes odom messages
@@ -266,7 +322,7 @@ private:
     double wheel_speed;
 
     // Check if if using simulation or not
-    if (simulate==true) {
+    if (simulate) {
       // If using simulation, read joint state messages to find wheel speed
       wheel_speed = wheel_speed_sim;      
     } else {
@@ -332,7 +388,7 @@ private:
       raw_accel[2] = msg.linear_acceleration.z;
     } else {
       raw_accel[0] = msg.linear_acceleration.z;
-      raw_accel[1] = msg.linear_acceleration.x;
+      raw_accel[1] = -msg.linear_acceleration.x;
       raw_accel[2] = -msg.linear_acceleration.y;
     }
   }
@@ -340,7 +396,14 @@ private:
   /// \brief The joint_states callback function, stores the wheel speed of the rear wheels
   void joint_states_callback(const sensor_msgs::msg::JointState & msg)
   {
-    wheel_speed_sim = msg.velocity[2];
+    double speed = msg.velocity[7];
+    if(abs(speed - wheel_speed_sim_prev) > 100.) {
+      wheel_speed_sim = wheel_speed_sim_prev;
+    } else {
+      wheel_speed_sim = speed;
+    }
+
+    wheel_speed_sim_prev = wheel_speed_sim;
   }
 
   /// \brief Callback reseting IMU odometry, should only be used when robot is stationary and level
@@ -366,6 +429,113 @@ private:
 
     RCLCPP_INFO(this->get_logger(), "IMU Reset.");
   }
+
+
+  /// \brief Publishes odom to base_link transform
+  void publish_odom_tf()
+  {
+    double rad_curve, delta_theta;
+    double x_new_rob, y_new_rob; 
+
+    // Find transform in robot frame, assume robot starts at (0,0)
+    if (angular_vel!=0.){
+      rad_curve = linear_vel / angular_vel;
+    } else {
+      rad_curve = 1000000000000.;
+    }
+    delta_theta = angular_vel / loop_rate;
+    if (delta_theta != 0.) {
+      x_new_rob = (rad_curve * sin(delta_theta));
+      y_new_rob = (rad_curve * cos(delta_theta)) - rad_curve;
+    } else {
+      x_new_rob = 0.;
+      y_new_rob = 0.;
+    }
+
+    theta += -angular_vel / loop_rate;
+
+    // Find tf in odom frame
+    x_pos += ((cos(theta_prev) * x_new_rob) - (sin(theta_prev) * y_new_rob));
+    y_pos += ((sin(theta_prev) * x_new_rob) + (cos(theta_prev) * y_new_rob));
+    RCLCPP_INFO(this->get_logger(), "linear_vel: %f", linear_vel);
+    RCLCPP_INFO(this->get_logger(), "angular_vel: %f", angular_vel);
+    RCLCPP_INFO(this->get_logger(), "rad_curve: %f", rad_curve);
+    RCLCPP_INFO(this->get_logger(), "delta_theta: %f", delta_theta);
+    RCLCPP_INFO(this->get_logger(), "x_new_rob: %f", x_new_rob);
+    RCLCPP_INFO(this->get_logger(), "y_new_rob: %f", y_new_rob);
+    RCLCPP_INFO(this->get_logger(), "x_pos: %f", x_pos);
+    RCLCPP_INFO(this->get_logger(), "y_pos: %f", y_pos);
+    RCLCPP_INFO(this->get_logger(), "theta: %f", theta);
+
+    // Create tf message
+    geometry_msgs::msg::TransformStamped tf_odom_base_msg;
+    tf_odom_base_msg.header.stamp = get_clock()->now();
+    tf_odom_base_msg.header.frame_id = "odom";
+    tf_odom_base_msg.child_frame_id = "base_link";
+    
+    // Fill out tf message
+    tf_odom_base_msg.transform.translation.x = x_pos;
+    tf_odom_base_msg.transform.translation.y = y_pos;
+    tf2::Quaternion quaternion;
+    quaternion.setRPY(0, 0, theta);
+    tf_odom_base_msg.transform.rotation.x = quaternion.x();
+    tf_odom_base_msg.transform.rotation.y = quaternion.y();
+    tf_odom_base_msg.transform.rotation.z = quaternion.z();
+    tf_odom_base_msg.transform.rotation.w = quaternion.w();
+
+    // Send tf_map_odom
+    tf_broadcaster->sendTransform(tf_odom_base_msg);
+
+    theta_prev = theta;
+  }
+
+  /// \brief Read scan messages from the sim and publish them again. Fixes clock issues with slam toolbox
+  void laser_sim_callback(const sensor_msgs::msg::LaserScan & msg)
+  {
+    sensor_msgs::msg::LaserScan scan_msg;
+
+    // Copy data into scan message, reset timestamp, and publish
+    scan_msg = msg;
+    scan_msg.header.stamp = get_clock()->now();
+    laser_pub->publish(scan_msg);
+  }
+
+  // /// \brief Publishes joint states for wheels
+  // void publish_joint_states()
+  // {
+  //   // Initialize local variables and messages
+  //   sensor_msgs::msg::JointState wheel_state;
+
+  //   // Read encoder positions and time from msg and calculate angles
+  //   left_encoder_ticks = msg.left_encoder;
+  //   right_encoder_ticks = msg.right_encoder;
+  //   time_now_sensor = (double)(msg.stamp.sec) + ((double)(msg.stamp.nanosec) * 0.000000001);
+  //   angle_left_wheel = left_encoder_ticks / encoder_ticks_per_rad;      // radians
+  //   angle_right_wheel = right_encoder_ticks / encoder_ticks_per_rad;    // radians
+
+  //   // Calculate wheel speeds
+  //   wheel_speed_left = ((left_encoder_ticks - left_encoder_ticks_prev) / encoder_ticks_per_rad) /
+  //     (time_now_sensor - time_prev_sensor);
+  //   wheel_speed_right = ((right_encoder_ticks - right_encoder_ticks_prev) / encoder_ticks_per_rad) /
+  //     (time_now_sensor - time_prev_sensor);
+
+  //   // Add headers to JointStates
+  //   // Refer to Citation [3] ChatGPT
+  //   wheel_state.header.stamp = get_clock()->now();
+
+  //   // Enter information into joint state messages
+  //   wheel_state.name = {"wheel_left_joint", "wheel_right_joint"};
+  //   wheel_state.position = {angle_left_wheel, angle_right_wheel};
+  //   wheel_state.velocity = {wheel_speed_left, wheel_speed_right};
+
+  //   // Update time_prev_sensor and encoders prev
+  //   time_prev_sensor = time_now_sensor;
+  //   left_encoder_ticks_prev = left_encoder_ticks;
+  //   right_encoder_ticks_prev = right_encoder_ticks;
+
+  //   // Publish joint states for both wheels
+  //   joint_states_pub->publish(wheel_state);
+  // }
 };
 
 int main(int argc, char ** argv)

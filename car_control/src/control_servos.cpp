@@ -138,7 +138,7 @@ public:
     declare_parameter("gear_ratio", 5.);
     declare_parameter("max_rpm", 16095.);
     declare_parameter("steer_angle_range", 0.8);
-    declare_parameter("max_decel_multiplier", 1.0);
+    declare_parameter("max_decel_multiplier", 0.5);
     declare_parameter("max_decel_offset", 0.1);
     declare_parameter("target_speed_multiplier", 1.01);
     declare_parameter("target_speed_offset", 0.45);
@@ -189,6 +189,11 @@ public:
     max_decel = 0.;
     speed_factor = (max_rpm * 2 * 3.1415926 * (wheel_diameter / 2) / (60 * gear_ratio)) / ((cmd_max - cmd_min) / 2);
     steering_factor = steer_angle_range / steer_cmd_range;
+
+    // For simulation, steer_cmd_center is always 1500
+    if (simulate) {
+      steer_cmd_center = 1500;
+    }
 
     // Subscribers
     steering_cmd_sub = create_subscription<std_msgs::msg::Int32>(

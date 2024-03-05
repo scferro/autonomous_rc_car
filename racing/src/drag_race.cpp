@@ -136,7 +136,7 @@ private:
       lidar_diff_prev = 0.;
       lidar_diff_cum = 0.;
     } else if ((time >= race_time) && (time < (race_time + 5.0))) {
-      // for two seconds after race ends, keep stering the car away from walls
+      // for two seconds after race ends, keep steering the car away from walls
       // send zero speed cmd_vel command
       cmd_vel_msg.angular.z = angular_from_lidar();
       cmd_vel_msg.linear.x = 0.0;
@@ -197,20 +197,22 @@ private:
   void laser_callback(const sensor_msgs::msg::LaserScan & msg)
   {
     std::vector<float> laser_ranges;
-    int left_center_index, right_center_index, sample_count;
+    int left_center_index, right_center_index, full_scan_count;
     double left_sum, right_sum;
-    int samples_left, samples_right;
+    double samples_left, samples_right;
 
     samples_left = sample_size;
     samples_right = sample_size;
 
     // Get ranges from msg
     laser_ranges = msg.ranges;
-    sample_count = laser_ranges.size();
+    full_scan_count = laser_ranges.size();
 
     // Find index to center measurements at 
-    right_center_index = sample_count * (sample_angle / 6.28318530718);
-    left_center_index = sample_count - right_center_index;
+    right_center_index = full_scan_count * (sample_angle / 6.28318530718);
+    left_center_index = full_scan_count - right_center_index;
+    // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "right_center_index: %i", right_center_index);
+    // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "left_center_index: %i", left_center_index);
 
     // Extract the data around the center points
     for(int i = (right_center_index - (sample_size / 2)); i < (right_center_index + (sample_size / 2)); i++) {
@@ -231,6 +233,8 @@ private:
     // Average data
     lidar_left = left_sum / samples_left;
     lidar_right = right_sum / samples_right;
+    // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "lidar_left: %f", lidar_left);
+    // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "lidar_right: %f", lidar_right);
   }
 
   /// \brief The odometry callback function, extracts the current angular speed of the car
