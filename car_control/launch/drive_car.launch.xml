@@ -14,9 +14,10 @@
         <arg name="enable_accel" value="true" />
     </include>
 
-    <!-- Launch Rviz launch file if use_rviz==true -->
-    <include file="$(find-pkg-share rviz_description)/launch/car_rviz.launch.py"  if="$(eval '\'$(var use_rviz)\' == \'true\'')">
+    <!-- Launch Rviz launch file -->
+    <include file="$(find-pkg-share rviz_description)/launch/car_rviz.launch.py">
         <arg name="use_jsp" value="jsp" />
+        <arg name="use_rviz" value="$(var use_rviz)" />
     </include>
 
     <!-- Launch SLLidar launch file if robot==local -->333333333366

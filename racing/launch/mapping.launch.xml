@@ -1,0 +1,29 @@
+<launch>
+
+    <!-- Arguments -->
+    <arg name="robot" default="local"/>
+    <arg name="traction_control" default="false"/>
+    <arg name="velocity_control" default="false"/>
+    <arg name="use_rviz_mapping" default="true"/>
+
+    <!-- Launch drive_car launch file -->
+    <include file="$(find-pkg-share car_control)/launch/drive_car.launch.xml">
+        <arg name="robot" value="$(var robot)"/>
+        <arg name="use_controller" value="true"/>
+        <arg name="controller_enabled" value="false"/>
+        <arg name="velocity_control" value="$(var velocity_control)"/>
+        <arg name="traction_control" value="$(var traction_control)"/>
+        <arg name="use_rviz" value="false"/>
+    </include>
+
+    <!-- Launch slam toolbox -->
+    <include file="$(find-pkg-share slam_toolbox)/launch/online_sync_launch.py">
+    </include>
+
+    <!-- Launch rviz node if use_rviz==true -->
+    <node pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share racing)/config/view_map.rviz" if="$(eval '\'$(var use_rviz_mapping)\' == \'true\' ')"/>
+
+    <!-- Publish a static TF between the odom and world frames-->
+    <node pkg="tf2_ros" exec="static_transform_publisher" args="0 0 0 0 0 0 1 /map /odom"/>
+
+</launch>

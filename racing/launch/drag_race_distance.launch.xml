@@ -1,0 +1,19 @@
+<launch>
+
+    <!-- Arguments -->
+    <arg name="robot" default="local"/>
+    <arg name="traction_control" default="true"/>
+
+    <!-- Launch drag racing node -->
+    <node pkg="racing" exec="drag_race">
+        <param from="$(find-pkg-share car_control)/config/params.yaml"/>
+    </node>
+
+    <!-- Launch mapping launch file -->
+    <include file="$(find-pkg-share racing)/launch/mapping.launch.xml">
+        <arg name="robot" value="$(var robot)"/>
+        <arg name="velocity_control" value="true"/>
+        <arg name="traction_control" value="$(var traction_control)"/>
+    </include>
+
+</launch>

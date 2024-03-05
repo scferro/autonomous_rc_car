@@ -44,6 +44,9 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "sensor_msgs/msg/laser_scan.hpp"
+#include "tf2_ros/transform_listener.h"
+#include "nav_msgs/msg/path.hpp"
+#include "tf2_ros/buffer.h"
 
 using namespace std::chrono_literals;
 
@@ -124,7 +127,9 @@ public:
     declare_parameter("beta", 0.02);
     declare_parameter("gyro_thresh", 0.01);
     declare_parameter("vel_thresh", 0.01);
+    declare_parameter("path_rate", 10.);
     declare_parameter("simulate", true);
+    declare_parameter("publish_path", true);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
@@ -137,7 +142,9 @@ public:
     beta = get_parameter("beta").as_double();
     gyro_thresh = get_parameter("gyro_thresh").as_double();
     vel_thresh = get_parameter("vel_thresh").as_double();
+    path_rate = get_parameter("path_rate").as_double();
     simulate = get_parameter("simulate").as_bool();
+    publish_path = get_parameter("publish_path").as_bool();
 
     // Define other variables
     linear_vel = 0.0;
@@ -181,6 +188,7 @@ public:
     odom_encoder_pub = create_publisher<nav_msgs::msg::Odometry>("odom_encoder", 10);
     laser_pub = create_publisher<sensor_msgs::msg::LaserScan>("scan", 10);
     joint_states_pub = create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
+    path_pub = create_publisher<nav_msgs::msg::Path>("path", 10);
 
     // Subscribers
     accel_sub = create_subscription<sensor_msgs::msg::Imu>(
@@ -204,15 +212,23 @@ public:
     // Timers
     int cycle_time = 1000.0 / loop_rate;
     int encoder_cycle_time = 1000.0 / encoder_rate;
+    int path_cycle_time = 1000.0 / path_rate;
     encoder_timer = this->create_wall_timer(
       std::chrono::milliseconds(encoder_cycle_time),
       std::bind(&Odometry::encoder_timer_callback, this));
     imu_timer = this->create_wall_timer(
       std::chrono::milliseconds(cycle_time),
       std::bind(&Odometry::imu_timer_callback, this));
+    path_timer = this->create_wall_timer(
+      std::chrono::milliseconds(path_cycle_time),
+      std::bind(&Odometry::update_path, this));
       
     // Transform broadcaster
     tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+    tf_buffer =
+      std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tf_listener =
+      std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
   }
 
 private:
@@ -222,13 +238,15 @@ private:
   double angles[3], gyro_angles[3], accel_angles[3];
   double linear_vel, linear_accel, angular_vel;
   int rate;
-  double loop_rate, encoder_rate, gear_ratio, alpha, beta, encoder_rate_sim;
+  double loop_rate, encoder_rate, path_rate, gear_ratio, alpha, beta, encoder_rate_sim;
   int encoder_ticks;
   uint16_t angle, angle_prev;
   double delta, wheel_diameter, chassis_speed;
   double gyro_thresh, wheel_speed_sim, wheel_speed_sim_prev, vel_thresh;
-  bool simulate;
+  bool simulate, publish_path;
   double x_pos, y_pos, theta, theta_prev;
+  nav_msgs::msg::Path path;
+  geometry_msgs::msg::PoseStamped pose;
 
   // Initialize encoder object 
   AS5048A encoder = AS5048A("/dev/spidev0.0", SPI_MODE_1, 1000000, 8); // Adjust as necessary
@@ -245,7 +263,11 @@ private:
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr imu_reset_srv;
   rclcpp::TimerBase::SharedPtr encoder_timer;
   rclcpp::TimerBase::SharedPtr imu_timer;
+  rclcpp::TimerBase::SharedPtr path_timer;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener{nullptr};
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub;
 
   /// \brief The main timer callback, loop for both wheels
   void imu_timer_callback()
@@ -457,15 +479,15 @@ private:
     // Find tf in odom frame
     x_pos += ((cos(theta_prev) * x_new_rob) - (sin(theta_prev) * y_new_rob));
     y_pos += ((sin(theta_prev) * x_new_rob) + (cos(theta_prev) * y_new_rob));
-    RCLCPP_INFO(this->get_logger(), "linear_vel: %f", linear_vel);
-    RCLCPP_INFO(this->get_logger(), "angular_vel: %f", angular_vel);
-    RCLCPP_INFO(this->get_logger(), "rad_curve: %f", rad_curve);
-    RCLCPP_INFO(this->get_logger(), "delta_theta: %f", delta_theta);
-    RCLCPP_INFO(this->get_logger(), "x_new_rob: %f", x_new_rob);
-    RCLCPP_INFO(this->get_logger(), "y_new_rob: %f", y_new_rob);
-    RCLCPP_INFO(this->get_logger(), "x_pos: %f", x_pos);
-    RCLCPP_INFO(this->get_logger(), "y_pos: %f", y_pos);
-    RCLCPP_INFO(this->get_logger(), "theta: %f", theta);
+    // RCLCPP_INFO(this->get_logger(), "linear_vel: %f", linear_vel);
+    // RCLCPP_INFO(this->get_logger(), "angular_vel: %f", angular_vel);
+    // RCLCPP_INFO(this->get_logger(), "rad_curve: %f", rad_curve);
+    // RCLCPP_INFO(this->get_logger(), "delta_theta: %f", delta_theta);
+    // RCLCPP_INFO(this->get_logger(), "x_new_rob: %f", x_new_rob);
+    // RCLCPP_INFO(this->get_logger(), "y_new_rob: %f", y_new_rob);
+    // RCLCPP_INFO(this->get_logger(), "x_pos: %f", x_pos);
+    // RCLCPP_INFO(this->get_logger(), "y_pos: %f", y_pos);
+    // RCLCPP_INFO(this->get_logger(), "theta: %f", theta);
 
     // Create tf message
     geometry_msgs::msg::TransformStamped tf_odom_base_msg;
@@ -536,6 +558,41 @@ private:
   //   // Publish joint states for both wheels
   //   joint_states_pub->publish(wheel_state);
   // }
+
+  /// \brief Updates the robot path with the current pose and publishes the path
+  void update_path()
+  {
+    if (publish_path) {
+      geometry_msgs::msg::TransformStamped transformStamped;
+      try {
+        transformStamped = tf_buffer->lookupTransform("map", "base_link", tf2::TimePointZero);
+
+        // Update ground truth red turtle path
+        path.header.stamp = get_clock()->now();
+        path.header.frame_id = "map";
+
+        // Create new pose stamped
+        pose.header.stamp = get_clock()->now();
+        pose.header.frame_id = "map";
+        pose.pose.position.x = transformStamped.transform.translation.x;
+        pose.pose.position.y = transformStamped.transform.translation.y;
+        pose.pose.position.z = 0.0;
+
+        // Add rotation quaternion about Z
+        pose.pose.orientation.x = transformStamped.transform.rotation.x;
+        pose.pose.orientation.y = transformStamped.transform.rotation.y;
+        pose.pose.orientation.z = transformStamped.transform.rotation.z;
+        pose.pose.orientation.w = transformStamped.transform.rotation.w;
+
+        // Add pose to path and publish path
+        path.poses.push_back(pose);
+        path_pub->publish(path);
+
+      } catch (tf2::TransformException &ex) {
+        RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Could not transform from map to base_link: %s", ex.what());
+      }
+    }
+  }
 };
 
 int main(int argc, char ** argv)
