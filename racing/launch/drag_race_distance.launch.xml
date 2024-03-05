@@ -3,17 +3,21 @@
     <!-- Arguments -->
     <arg name="robot" default="local"/>
     <arg name="traction_control" default="true"/>
+    <arg name="use_rviz" default="true"/>
 
     <!-- Launch drag racing node -->
     <node pkg="racing" exec="drag_race">
         <param from="$(find-pkg-share car_control)/config/params.yaml"/>
+        <param name="race_distance" value="10."/>
+        <param name="distance_race" value="true"/>
     </node>
 
-    <!-- Launch mapping launch file -->
-    <include file="$(find-pkg-share racing)/launch/mapping.launch.xml">
+    <!-- Launch drive_with_slam launch file -->
+    <include file="$(find-pkg-share car_control)/launch/drive_with_slam.launch.xml">
         <arg name="robot" value="$(var robot)"/>
         <arg name="velocity_control" value="true"/>
         <arg name="traction_control" value="$(var traction_control)"/>
+        <arg name="use_rviz_mapping" value="$(var use_rviz)"/>
     </include>
 
 </launch>

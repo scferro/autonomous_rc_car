@@ -21,6 +21,15 @@
 #include "std_srvs/srv/set_bool.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "sensor_msgs/msg/laser_scan.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_ros/transform_broadcaster.h"
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_ros/transform_listener.h"
+#include "nav_msgs/msg/path.hpp"
+#include "tf2_ros/buffer.h"
+#include "std_msgs/msg/int32.hpp"
 
 using namespace std::chrono_literals;
 
@@ -33,7 +42,9 @@ public:
     // Parameters and default values
     declare_parameter("rate", 100.);
     declare_parameter("cmd_max", 2000);
+    declare_parameter("cmd_min", 1000);
     declare_parameter("race_time", 0.5);
+    declare_parameter("race_distance", 10.);
     declare_parameter("max_rpm", 16095.);
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("gear_ratio", 5.);
@@ -43,11 +54,14 @@ public:
     declare_parameter("sample_size", 20);
     declare_parameter("sample_angle", 1.0471975512);
     declare_parameter("ramp_time", 1.5);
+    declare_parameter("distance_race", false);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
     cmd_max = get_parameter("cmd_max").as_int();
+    cmd_min = get_parameter("cmd_min").as_int();
     race_time = get_parameter("race_time").as_double();
+    race_time = get_parameter("race_distance").as_double();
     max_rpm = get_parameter("max_rpm").as_double();
     wheel_diameter = get_parameter("wheel_diameter").as_double();
     gear_ratio = get_parameter("gear_ratio").as_double();
@@ -57,6 +71,7 @@ public:
     sample_size = get_parameter("sample_size").as_int();
     sample_angle = get_parameter("sample_angle").as_double();
     ramp_time = get_parameter("ramp_time").as_double();
+    distance_race = get_parameter("distance_race").as_bool();
 
     // Other variables
     time = race_time + 10.;
@@ -65,9 +80,12 @@ public:
     max_speed = (max_rpm / gear_ratio) * (wheel_diameter / 2.);
     lidar_diff_prev = 0.;
     lidar_diff_cum = 0.;
+    cmd_neutral = (cmd_min + cmd_max) / 2;
 
     // Publishers
     cmd_vel_pub = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
+    planned_path_pub = create_publisher<nav_msgs::msg::Path>("path_plan", 10);
+    drive_cmd_pub = create_publisher<std_msgs::msg::Int32>("drive_cmd", 10);
 
     // Subscribers
     odom_sub = create_subscription<nav_msgs::msg::Odometry>(
@@ -91,59 +109,88 @@ public:
     main_timer = this->create_wall_timer(
       std::chrono::milliseconds(cycle_time),
       std::bind(&Drag_Race::timer_callback, this));
+      
+    // Transform broadcaster and listener
+    tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+    tf_buffer =
+      std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tf_listener =
+      std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
+
+    // If doing distance race, set race time very high and create goal pose
+    if (distance_race) {
+      race_time = 10000.;
+      publish_goal_path();
+    }
   }
 
 private:
   // Initialize parameter variables
   int rate;
-  double race_time, loop_rate;
-  int cmd_max, sample_size;
+  double race_time, loop_rate, race_distance;
+  int cmd_max, cmd_min, cmd_neutral, sample_size;
   int state = 1;
   double time, speed;
-  bool race_on;
+  bool race_on, distance_race;
   double max_speed, wheel_diameter, max_rpm, gear_ratio;
   double Kp, Ki, Kd, ramp_time;
   double lidar_diff_prev, lidar_diff_cum;
   double lidar_left, lidar_right, sample_angle;
+  geometry_msgs::msg::PoseStamped goal_pose, start_pose, current_pose;
+  nav_msgs::msg::Path planned_path, race_path;
 
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr start_race_srv;
   rclcpp::Client<std_srvs::srv::Empty>::SharedPtr imu_reset_cli;
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_drive_cli;
   rclcpp::TimerBase::SharedPtr main_timer;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr planned_path_pub;
+  std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener{nullptr};
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer;
 
   /// \brief The main timer callback, publishes velocity commands
   void timer_callback()
   {
     geometry_msgs::msg::Twist cmd_vel_msg;
+    std_msgs::msg::Int32 drive_msg;
 
     if ((time < race_time) && (time >= 0)) {
-      race_on = true;
       // cmd_vel commands
       cmd_vel_msg.angular.z = angular_from_lidar();
+
+      // Ramp throttle
       if (time < ramp_time) {
-        cmd_vel_msg.linear.x = max_speed * (time / ramp_time);
+        drive_msg.data = ((cmd_max - cmd_neutral) * (time / ramp_time)) + cmd_neutral;
       } else {
-        cmd_vel_msg.linear.x = max_speed;
+        drive_msg.data = cmd_max;
       }
-      // Print current speed
+
+      // If doing distance race, check if robot has passed finish line
+      if (distance_race) {
+        check_goal();
+      }
+
+      // Print current time
       RCLCPP_INFO(this->get_logger(), "Race Time: %f", time);
     } else if (time < 0.0) {
       // Print countdown 
       RCLCPP_INFO(this->get_logger(), "Countdown: %f", -time);
       lidar_diff_prev = 0.;
       lidar_diff_cum = 0.;
+      race_on = true;
     } else if ((time >= race_time) && (time < (race_time + 5.0))) {
-      // for two seconds after race ends, keep steering the car away from walls
+      // for five seconds after race ends, keep steering the car away from walls
       // send zero speed cmd_vel command
       cmd_vel_msg.angular.z = angular_from_lidar();
-      cmd_vel_msg.linear.x = 0.0;
+      drive_msg.data = 0.;
       // If race just ended
       if (race_on==true) {
         // Print final time
-        RCLCPP_INFO(this->get_logger(), "Race over. Final speed: %f", speed);
+        RCLCPP_INFO(this->get_logger(), "Race over. Race Time: %f, Final speed: %f", race_time, speed);
         race_on = false;
         // Disable drive motor
         auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
@@ -160,8 +207,8 @@ private:
       }
     } else {
       // send zero speed cmd_vel command
-      cmd_vel_msg.angular.z = angular_from_lidar();
-      cmd_vel_msg.linear.x = 0.0;
+      cmd_vel_msg.angular.z = 0.0;
+      drive_msg.data = 0.;
     }
 
     // update time
@@ -169,7 +216,13 @@ private:
     
     // Publish commands
     cmd_vel_pub->publish(cmd_vel_msg);
+    drive_cmd_pub->publish(drive_msg);
     speed = 0.;
+
+    // Publish goal pose and planned path if distance race
+    if (distance_race) {
+      publish_goal_path();
+    }
   }
 
   /// \brief Updates the angular velocity command based on the lidar readings
@@ -271,6 +324,69 @@ private:
     // Start race
     RCLCPP_INFO(this->get_logger(), "Race Starting...");
     time = -5.0;
+  }
+
+  /// \brief Create a goal pose at a specified distance from the start position
+  void publish_goal_path()
+  {
+    // Create tf message
+    geometry_msgs::msg::TransformStamped goal_pose_tf;
+    goal_pose_tf.header.stamp = get_clock()->now();
+    goal_pose_tf.header.frame_id = "map";
+    goal_pose_tf.child_frame_id = "goal_pose";
+    
+    // Fill out tf message
+    goal_pose_tf.transform.translation.x = race_distance;
+    goal_pose_tf.transform.translation.y = 0;
+    goal_pose_tf.transform.rotation.x = 0.;
+    goal_pose_tf.transform.rotation.y = 0.;
+    goal_pose_tf.transform.rotation.z = 0.;
+    goal_pose_tf.transform.rotation.w = 1.;
+
+    // Send tf_map_odom
+    tf_broadcaster->sendTransform(goal_pose_tf);
+
+    // Fill out start pose
+    start_pose.header.stamp = get_clock()->now();
+    start_pose.header.frame_id = "map";
+    start_pose.pose.position.x = race_distance;
+    start_pose.pose.position.y = 0.0;
+    start_pose.pose.position.z = 0.0;
+    start_pose.pose.orientation.x = 0.;
+    start_pose.pose.orientation.y = 0.;
+    start_pose.pose.orientation.z = 0.;
+    start_pose.pose.orientation.w = 1.;
+    planned_path.poses.push_back(start_pose);
+
+    // Fill out goal pose
+    goal_pose.header.stamp = get_clock()->now();
+    goal_pose.header.frame_id = "map";
+    goal_pose.pose.position.x = race_distance;
+    goal_pose.pose.position.y = 0.0;
+    goal_pose.pose.position.z = 0.0;
+    goal_pose.pose.orientation.x = 0.;
+    goal_pose.pose.orientation.y = 0.;
+    goal_pose.pose.orientation.z = 0.;
+    goal_pose.pose.orientation.w = 1.;
+    planned_path.poses.push_back(goal_pose);
+
+    // Publish path
+    planned_path_pub->publish(planned_path);
+  }
+
+  /// \brief Check if robot is past goal pose
+  void check_goal()
+  {
+    geometry_msgs::msg::TransformStamped transformStamped;
+    try {
+      transformStamped = tf_buffer->lookupTransform("goal_pose", "base_link", tf2::TimePointZero);
+    } catch (tf2::TransformException &ex) {
+      RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Could not transform from goal_pose to base_link: %s", ex.what());
+    }
+    
+    if (transformStamped.transform.translation.x >= 0.) {
+      race_time = time;
+    }
   }
 };
 

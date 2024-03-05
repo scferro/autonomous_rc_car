@@ -223,7 +223,7 @@ public:
       std::chrono::milliseconds(path_cycle_time),
       std::bind(&Odometry::update_path, this));
       
-    // Transform broadcaster
+    // Transform broadcaster and listener
     tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     tf_buffer =
       std::make_unique<tf2_ros::Buffer>(this->get_clock());

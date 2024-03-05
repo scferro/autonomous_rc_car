@@ -49,6 +49,7 @@ public:
     declare_parameter("Kd_drive", 0.0);
     declare_parameter("max_rpm", 16095.);
     declare_parameter("gear_ratio", 5.);
+    declare_parameter("publish_drive", false);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
@@ -63,6 +64,7 @@ public:
     Kd_drive = get_parameter("Kd_drive").as_double();
     max_rpm = get_parameter("max_rpm").as_double();
     gear_ratio = get_parameter("gear_ratio").as_double();
+    publish_drive = get_parameter("publish_drive").as_bool();
 
     // Other variables
     cmd_neutral = (cmd_min + cmd_max) / 2;
@@ -78,8 +80,8 @@ public:
     linear_error_prev = 0.;
     linear_error_cum = 0.;
     linear_error_der = 0.;
-    steer_cmd = 1500;
-    drive_cmd = 1500;
+    steer_cmd = cmd_neutral;
+    drive_cmd = cmd_neutral;
     max_speed = (max_rpm / gear_ratio) * (wheel_diameter / 2.);
 
     // Publishers
@@ -105,6 +107,7 @@ private:
   // Initialize parameter variables
   int rate;
   int cmd_max, cmd_min, cmd_neutral, steer_cmd, drive_cmd;
+  bool publish_drive;
   double loop_rate, wheel_diameter;
   double Kp_steer, Ki_steer, Kd_steer;
   double Kp_drive, Ki_drive, Kd_drive;
@@ -128,29 +131,38 @@ private:
     std_msgs::msg::Int32 steer_msg;
     std_msgs::msg::Int32 drive_msg;
 
-    // Calculate error, integral/cumulative error, derivative of error
+    // Calculate error, integral/cumulative error, derivative of error for steering
     angular_error = angular_vel_cmd - angular_vel;
     angular_error_cum += angular_error * (1.0 / loop_rate);
     angular_error_der = (angular_error - angular_error_prev) / (1.0 / loop_rate);
-    linear_error = linear_vel_cmd - linear_vel;
-    linear_error_cum += linear_error * (1.0 / loop_rate);
-    linear_error_der = (linear_error - linear_error_prev) / (1.0 / loop_rate);
 
     // Calculate steering command with PID
     steer_cmd = -((Kp_steer * angular_error) + (Ki_steer * angular_error_cum) + (Kd_steer * angular_error_der)) + 1500;
-    drive_cmd = ((Kp_drive * linear_error) + (Ki_drive * linear_error_cum) + (Kd_drive * linear_error_der)) + 1500;
 
-    // Limit servo commands and add to message
+    // Limit servo commands and add to message, publish
     steer_msg.data = limit_cmd(steer_cmd);
-    drive_msg.data = limit_cmd(drive_cmd);
+    steering_cmd_pub->publish(steer_msg);
 
     // Store errors as previous errors
     angular_error_prev = angular_error;
-    linear_error_prev = linear_error;
-    
-    // Publish command messages
-    steering_cmd_pub->publish(steer_msg);
-    drive_cmd_pub->publish(drive_msg);
+
+    // If publish drive command==true, run PID and publish drive command
+    if (publish_drive) {
+      // Calculate error, integral/cumulative error, derivative of error for steering
+      linear_error = linear_vel_cmd - linear_vel;
+      linear_error_cum += linear_error * (1.0 / loop_rate);
+      linear_error_der = (linear_error - linear_error_prev) / (1.0 / loop_rate);
+
+      // Calculate drive cmd with PID
+      drive_cmd = ((Kp_drive * linear_error) + (Ki_drive * linear_error_cum) + (Kd_drive * linear_error_der)) + 1500;
+
+      // Create and publish drive command message
+      drive_msg.data = limit_cmd(drive_cmd);
+      drive_cmd_pub->publish(drive_msg);
+
+      // Store error as prev error
+      linear_error_prev = linear_error;
+    }
 
     // RCLCPP_INFO(this->get_logger(), "steer_cmd: %i", steer_cmd);
     // RCLCPP_INFO(this->get_logger(), "angular_error: %f", angular_error);
