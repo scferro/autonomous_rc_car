@@ -13,7 +13,7 @@
     </node>
 
     <!-- Launch drive_with_slam launch file -->
-    <include file="$(find-pkg-share car_control)/launch/drive_with_slam.launch.xml">
+    <include file="$(find-pkg-share car_control)/launch/drive_with_localization.launch.xml">
         <arg name="robot" value="$(var robot)"/>
         <arg name="velocity_control" value="true"/>
         <arg name="traction_control" value="$(var traction_control)"/>

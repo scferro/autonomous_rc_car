@@ -81,6 +81,34 @@ public:
     lidar_diff_prev = 0.;
     lidar_diff_cum = 0.;
     cmd_neutral = (cmd_min + cmd_max) / 2;
+    
+    // Create planned path
+    planned_path.header.stamp = get_clock()->now();
+    planned_path.header.frame_id = "map";
+
+    // Fill out start pose
+    start_pose.header.stamp = get_clock()->now();
+    start_pose.header.frame_id = "map";
+    start_pose.pose.position.x = 0.0;
+    start_pose.pose.position.y = 0.0;
+    start_pose.pose.position.z = 0.0;
+    start_pose.pose.orientation.x = 0.;
+    start_pose.pose.orientation.y = 0.;
+    start_pose.pose.orientation.z = 0.;
+    start_pose.pose.orientation.w = 1.;
+    planned_path.poses.push_back(start_pose);
+
+    // Fill out goal pose
+    goal_pose.header.stamp = get_clock()->now();
+    goal_pose.header.frame_id = "map";
+    goal_pose.pose.position.x = race_distance;
+    goal_pose.pose.position.y = 0.0;
+    goal_pose.pose.position.z = 0.0;
+    goal_pose.pose.orientation.x = 0.;
+    goal_pose.pose.orientation.y = 0.;
+    goal_pose.pose.orientation.z = 0.;
+    goal_pose.pose.orientation.w = 1.;
+    planned_path.poses.push_back(goal_pose);
 
     // Publishers
     cmd_vel_pub = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
@@ -101,7 +129,7 @@ public:
       std::bind(&Drag_Race::start_race_callback, this, std::placeholders::_1, std::placeholders::_2));
 
     // Clients
-    imu_reset_cli = create_client<std_srvs::srv::Empty>("imu_reset");
+    odom_reset_cli = create_client<std_srvs::srv::Empty>("odom_reset");
     enable_drive_cli = create_client<std_srvs::srv::SetBool>("enable_drive");
 
     // Main timer
@@ -136,17 +164,18 @@ private:
   double Kp, Ki, Kd, ramp_time;
   double lidar_diff_prev, lidar_diff_cum;
   double lidar_left, lidar_right, sample_angle;
-  geometry_msgs::msg::PoseStamped current_pose;
+  geometry_msgs::msg::PoseStamped current_pose, goal_pose, start_pose;
+  nav_msgs::msg::Path planned_path;
 
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr planned_path_pub;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr start_race_srv;
-  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr imu_reset_cli;
+  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr odom_reset_cli;
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_drive_cli;
   rclcpp::TimerBase::SharedPtr main_timer;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr planned_path_pub;
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener{nullptr};
   std::unique_ptr<tf2_ros::Buffer> tf_buffer;
@@ -157,6 +186,7 @@ private:
     geometry_msgs::msg::Twist cmd_vel_msg;
     std_msgs::msg::Int32 drive_msg;
 
+    // If racing, publish drive and steer commands
     if ((time < race_time) && (time >= 0)) {
       // cmd_vel commands
       cmd_vel_msg.angular.z = angular_from_lidar();
@@ -175,17 +205,22 @@ private:
 
       // Print current time
       RCLCPP_INFO(this->get_logger(), "Race Time: %f", time);
+    // If before race, print countdown
     } else if (time < 0.0) {
       // Print countdown 
       RCLCPP_INFO(this->get_logger(), "Countdown: %f", -time);
       lidar_diff_prev = 0.;
       lidar_diff_cum = 0.;
       race_on = true;
+      // send zero speed cmd_vel command
+      cmd_vel_msg.angular.z = 0.0;
+      drive_msg.data = cmd_neutral;
+    // If after race, end race and wait
     } else if ((time >= race_time) && (time < (race_time + 5.0))) {
       // for five seconds after race ends, keep steering the car away from walls
       // send zero speed cmd_vel command
       cmd_vel_msg.angular.z = angular_from_lidar();
-      drive_msg.data = 0.;
+      drive_msg.data = cmd_neutral;
       // If race just ended
       if (race_on==true) {
         // Print final time
@@ -207,10 +242,10 @@ private:
     } else {
       // send zero speed cmd_vel command
       cmd_vel_msg.angular.z = 0.0;
-      drive_msg.data = 0.;
+      drive_msg.data = cmd_neutral;
     }
 
-    // update time
+    // Update time
     time +=  1. / loop_rate;
     
     // Publish commands
@@ -263,8 +298,6 @@ private:
     // Find index to center measurements at 
     right_center_index = full_scan_count * (sample_angle / 6.28318530718);
     left_center_index = full_scan_count - right_center_index;
-    // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "right_center_index: %i", right_center_index);
-    // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "left_center_index: %i", left_center_index);
 
     // Extract the data around the center points
     for(int i = (right_center_index - (sample_size / 2)); i < (right_center_index + (sample_size / 2)); i++) {
@@ -285,8 +318,6 @@ private:
     // Average data
     lidar_left = left_sum / samples_left;
     lidar_right = right_sum / samples_right;
-    // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "lidar_left: %f", lidar_left);
-    // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "lidar_right: %f", lidar_right);
   }
 
   /// \brief The odometry callback function, extracts the current angular speed of the car
@@ -303,12 +334,11 @@ private:
     // Reset odometry for accurate velocity measurements
     auto request_empty = std::make_shared<std_srvs::srv::Empty::Request>();
     int count = 0;
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Resetting IMU...");
-    while ((!imu_reset_cli->wait_for_service(1s)) && (count < 5)) {
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for reset_imu service...");
+    while ((!odom_reset_cli->wait_for_service(1s)) && (count < 5)) {
+      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for reset_odom service...");
       count++;
     }
-    auto result_empty = imu_reset_cli->async_send_request(request_empty);
+    auto result_empty = odom_reset_cli->async_send_request(request_empty);
 
     // Enable drive motor
     auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
@@ -325,39 +355,35 @@ private:
     time = -5.0;
   }
 
-  /// \brief Create a goal pose at a specified distance from the start position
+  /// \brief Publish goal pose and path to goal
   void publish_goal_path()
   {
-
-    geometry_msgs::msg::PoseStamped goal_pose, start_pose;
-    nav_msgs::msg::Path planned_path;
-
-    // Fill out start pose
     start_pose.header.stamp = get_clock()->now();
     start_pose.header.frame_id = "map";
-    start_pose.pose.position.x = 0.0;
-    start_pose.pose.position.y = 0.0;
-    start_pose.pose.position.z = 0.0;
-    start_pose.pose.orientation.x = 0.;
-    start_pose.pose.orientation.y = 0.;
-    start_pose.pose.orientation.z = 0.;
-    start_pose.pose.orientation.w = 1.;
-    planned_path.poses.push_back(start_pose);
-
-    // Fill out goal pose
     goal_pose.header.stamp = get_clock()->now();
     goal_pose.header.frame_id = "map";
-    goal_pose.pose.position.x = race_distance;
-    goal_pose.pose.position.y = 0.0;
-    goal_pose.pose.position.z = 0.0;
-    goal_pose.pose.orientation.x = 0.;
-    goal_pose.pose.orientation.y = 0.;
-    goal_pose.pose.orientation.z = 0.;
-    goal_pose.pose.orientation.w = 1.;
-    planned_path.poses.push_back(goal_pose);
+    planned_path.header.stamp = get_clock()->now();
+    planned_path.header.frame_id = "map";
 
     // Publish path
     planned_path_pub->publish(planned_path);
+    
+    // Create tf message
+    geometry_msgs::msg::TransformStamped tf_map_goal_msg;
+    tf_map_goal_msg.header.stamp = get_clock()->now();
+    tf_map_goal_msg.header.frame_id = "map";
+    tf_map_goal_msg.child_frame_id = "goal_pose";
+    
+    // Fill out tf message
+    tf_map_goal_msg.transform.translation.x = goal_pose.pose.position.x;
+    tf_map_goal_msg.transform.translation.y = goal_pose.pose.position.y;
+    tf_map_goal_msg.transform.rotation.x = goal_pose.pose.orientation.x;
+    tf_map_goal_msg.transform.rotation.y = goal_pose.pose.orientation.y;
+    tf_map_goal_msg.transform.rotation.z = goal_pose.pose.orientation.z;
+    tf_map_goal_msg.transform.rotation.w = goal_pose.pose.orientation.w;
+
+    // Send tf_map_odom
+    tf_broadcaster->sendTransform(tf_map_goal_msg);
   }
 
   /// \brief Check if robot is past goal pose

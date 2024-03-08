@@ -2,6 +2,7 @@
 
     <!-- Arguments -->
     <arg name="controller_enabled" default="true"/>
+    <arg name="slow_mode" default="false"/>
 
     <!-- Launch joy node if use_controller==true -->
     <node pkg="joy" exec="joy_node">
@@ -10,6 +11,7 @@
     <!-- Launch controller_interface node if use_controller==true -->
     <node pkg="car_control" exec="controller_interface">
         <param name="controller_enabled" value="$(var controller_enabled)"/>
+        <param name="slow_mode" value="$(var slow_mode)"/>
         <param from="$(find-pkg-share car_control)/config/params.yaml"/>
     </node>
 

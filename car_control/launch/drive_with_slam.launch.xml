@@ -5,6 +5,7 @@
     <arg name="traction_control" default="false"/>
     <arg name="velocity_control" default="false"/>
     <arg name="use_rviz_mapping" default="true"/>
+    <arg name="slow_mode" default="true"/>
 
     <!-- Launch drive_car launch file -->
     <include file="$(find-pkg-share car_control)/launch/drive_car.launch.xml">
@@ -14,10 +15,12 @@
         <arg name="velocity_control" value="$(var velocity_control)"/>
         <arg name="traction_control" value="$(var traction_control)"/>
         <arg name="use_rviz" value="false"/>
+        <arg name="slow_mode" value="$(var slow_mode)"/>
+        <param from="$(find-pkg-share car_control)/config/slam_params.yaml"/>
     </include>
 
     <!-- Launch slam toolbox -->
-    <include file="$(find-pkg-share slam_toolbox)/launch/online_sync_launch.py">
+    <include file="$(find-pkg-share slam_toolbox)/launch/offline_launch.py">
     </include>
 
     <!-- Launch rviz node if use_rviz==true -->

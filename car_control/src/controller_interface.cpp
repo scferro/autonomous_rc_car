@@ -39,17 +39,28 @@ public:
     declare_parameter("cmd_max", 2000);
     declare_parameter("cmd_min", 1000);
     declare_parameter("enable_controller", false);
+    declare_parameter("slow_mode", true);
+    declare_parameter("cmd_max_slow", 1550);
+    declare_parameter("cmd_min_slow", 1450);
+    declare_parameter("max_accel", 200);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
     cmd_max = get_parameter("cmd_max").as_int();
     cmd_min = get_parameter("cmd_min").as_int();
     enable_controller = get_parameter("enable_controller").as_bool();
+    slow_mode = get_parameter("slow_mode").as_bool();
+    cmd_max_slow = get_parameter("cmd_max_slow").as_int();
+    cmd_min_slow = get_parameter("cmd_min_slow").as_int();
+    max_accel = get_parameter("max_accel").as_int();
 
     // Define other variables
     cmd_neutral = (cmd_min + cmd_max) / 2;
     drive_cmd = cmd_neutral;
     steer_cmd = cmd_neutral;
+    drive_cmd_prev = cmd_neutral;
+    first_msg = true;
+    max_increase = max_accel / loop_rate;
 
     // Publishers
     steering_cmd_pub = create_publisher<std_msgs::msg::Int32>("steering_cmd", 10);
@@ -67,7 +78,7 @@ public:
 
     // Clients
     enable_drive_cli = create_client<std_srvs::srv::SetBool>("enable_drive");
-    imu_reset_cli = create_client<std_srvs::srv::Empty>("imu_reset");
+    odom_reset_cli = create_client<std_srvs::srv::Empty>("odom_reset");
     start_race_cli = create_client<std_srvs::srv::Empty>("start_race");
 
     // Main timer
@@ -80,16 +91,18 @@ public:
 private:
   // Initialize parameter variables
   int rate;
-  int loop_rate, cmd_max, cmd_min, cmd_neutral;
-  int drive_cmd, steer_cmd;
+  double loop_rate, cmd_max, cmd_min, cmd_neutral, max_accel, max_increase;
+  double drive_cmd, steer_cmd, drive_cmd_prev, cmd_max_slow, cmd_min_slow;
   bool enable_controller;
+  sensor_msgs::msg::Joy msg_prev;
+  bool first_msg, slow_mode;
   
   // Create ROS publishers, timers, broadcasters, etc.
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr steering_cmd_pub;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_sub;
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_drive_cli;
-  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr imu_reset_cli;
+  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr odom_reset_cli;
   rclcpp::Client<std_srvs::srv::Empty>::SharedPtr start_race_cli;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enable_controller_srv;
   rclcpp::TimerBase::SharedPtr main_timer;
@@ -98,6 +111,11 @@ private:
   void timer_callback()
   {
     std_msgs::msg::Int32 drive_msg, steer_msg;
+
+    // If slow mode is enabled, limit commands
+    if (slow_mode) {
+      slow_mode_cmd();
+    }
 
     // Adding servo commands to message
     drive_msg.data = drive_cmd;
@@ -110,6 +128,27 @@ private:
     }
   }
 
+  /// \brief The main timer callback, publishes servo commands for the drive and steering
+  void slow_mode_cmd()
+  {
+    // Limit commands to the slow cmd range
+    if (drive_cmd > cmd_max_slow) {
+      drive_cmd = cmd_max_slow;
+    } else if (drive_cmd < cmd_min_slow) {
+      drive_cmd = cmd_min_slow;
+    }
+
+    // Limit acceleration rate 
+    if ((drive_cmd > cmd_neutral) && (drive_cmd > (drive_cmd_prev + max_increase))) {
+      drive_cmd = drive_cmd_prev + max_increase; 
+    } else if ((drive_cmd < cmd_neutral) && (drive_cmd < (drive_cmd_prev - max_increase))) {
+      drive_cmd = drive_cmd_prev - max_increase; 
+    }
+
+    // Store drive_cmd as drive_cmd_prev
+    drive_cmd_prev = drive_cmd;
+  }  
+
   /// \brief The joystick callback function, calculates servo commands from the controller inputs
   void joy_callback(const sensor_msgs::msg::Joy & msg)
   {
@@ -117,6 +156,11 @@ private:
     bool enable_drive_cmd;
     auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
     auto request_empty = std::make_shared<std_srvs::srv::Empty::Request>();
+
+    if (first_msg) {
+      msg_prev = msg;
+      first_msg = false;
+    }
 
     // Get drive and steeing inputs from controller
     fwd_input = msg.axes[5];
@@ -135,14 +179,12 @@ private:
     steer_cmd = ((steer_input + 2.0) / 4.0) * (cmd_max - cmd_min) + cmd_min;
 
     // Check if enable_drive buttons are pressed
-    if (msg.buttons[0]==1) {
+    if (msg.buttons[0]==1 && msg_prev.buttons[0]!=1) {
       request->data = true;
       enable_drive_cmd = true;
-      RCLCPP_INFO(this->get_logger(), "Drive motor enabled.");
-    } else if (msg.buttons[1]==1) {
+    } else if (msg.buttons[1]==1 && msg_prev.buttons[1]!=1) {
       request->data = false;
       enable_drive_cmd = true;
-      RCLCPP_INFO(this->get_logger(), "Drive motor disabled.");
     }
 
     // If enable driver button pressed, enable drive
@@ -157,35 +199,35 @@ private:
     }
 
     // Check if enable_controller buttons are pressed
-    if (msg.buttons[5]==1) {
+    if (msg.buttons[5]==1 && msg_prev.buttons[5]!=1) {
       RCLCPP_INFO(this->get_logger(), "Controller enabled.");
       enable_controller = true;
-    } else if (msg.buttons[4]==1) {
+    } else if (msg.buttons[4]==1 && msg_prev.buttons[4]!=1) {
       RCLCPP_INFO(this->get_logger(), "Controller disabled.");
       enable_controller = false;
     }
 
     // If reset_imu button is press, call reset IMU service
-    if (msg.buttons[3]==1) {
+    if (msg.buttons[3]==1 && msg_prev.buttons[3]!=1) {
       int count = 0;
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Resetting IMU...");
-      while ((!imu_reset_cli->wait_for_service(1s)) && (count < 5)) {
+      while ((!odom_reset_cli->wait_for_service(1s)) && (count < 5)) {
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for reset_imu service...");
         count++;
       }
-      auto result = imu_reset_cli->async_send_request(request_empty);
+      auto result = odom_reset_cli->async_send_request(request_empty);
     }
 
     // If start_race button is press, call start_race service
-    if (msg.buttons[2]==1) {
+    if (msg.buttons[2]==1 && msg_prev.buttons[2]!=1) {
       int count = 0;
-      RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Starting race...");
       while ((!start_race_cli->wait_for_service(1s)) && (count < 5)) {
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for start_race service...");
         count++;
       }
       auto result = start_race_cli->async_send_request(request_empty);
     }
+    // Save msg as msg_prev
+    msg_prev = msg;
   }
 
   /// \brief Limits the range of a cmd to [-motor_cmd_max, motor_cmd_max]

@@ -125,11 +125,12 @@ public:
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("alpha", 0.02);
     declare_parameter("beta", 0.02);
-    declare_parameter("gyro_thresh", 0.01);
+    declare_parameter("gyro_thresh", 0.1);
+    declare_parameter("accel_thresh", 0.05);
     declare_parameter("vel_thresh", 0.01);
     declare_parameter("path_rate", 10.);
     declare_parameter("simulate", true);
-    declare_parameter("publish_path", true);
+    declare_parameter("publish_path", false);
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
@@ -141,6 +142,7 @@ public:
     alpha = get_parameter("alpha").as_double();
     beta = get_parameter("beta").as_double();
     gyro_thresh = get_parameter("gyro_thresh").as_double();
+    accel_thresh = get_parameter("accel_thresh").as_double();
     vel_thresh = get_parameter("vel_thresh").as_double();
     path_rate = get_parameter("path_rate").as_double();
     simulate = get_parameter("simulate").as_bool();
@@ -199,15 +201,15 @@ public:
       custom_qos_profile, std::bind(&Odometry::gyro_callback, this, std::placeholders::_1));
     joint_states_sub = create_subscription<sensor_msgs::msg::JointState>(
       "joint_states_sim",
-      10, std::bind(&Odometry::joint_states_callback, this, std::placeholders::_1));
+      10, std::bind(&Odometry::joint_states_sim_callback, this, std::placeholders::_1));
     laser_sim_sub = create_subscription<sensor_msgs::msg::LaserScan>(
       "scan_sim",
       10, std::bind(&Odometry::laser_sim_callback, this, std::placeholders::_1));
 
     // Servers
-    imu_reset_srv = create_service<std_srvs::srv::Empty>(
-      "imu_reset",
-      std::bind(&Odometry::imu_reset_callback, this, std::placeholders::_1, std::placeholders::_2));
+    odom_reset_srv = create_service<std_srvs::srv::Empty>(
+      "odom_reset",
+      std::bind(&Odometry::odom_reset_callback, this, std::placeholders::_1, std::placeholders::_2));
 
     // Timers
     int cycle_time = 1000.0 / loop_rate;
@@ -242,7 +244,7 @@ private:
   int encoder_ticks;
   uint16_t angle, angle_prev;
   double delta, wheel_diameter, chassis_speed;
-  double gyro_thresh, wheel_speed_sim, wheel_speed_sim_prev, vel_thresh;
+  double wheel_speed_sim, wheel_speed_sim_prev, gyro_thresh, accel_thresh, vel_thresh;
   bool simulate, publish_path;
   double x_pos, y_pos, theta, theta_prev;
   nav_msgs::msg::Path path;
@@ -260,7 +262,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr accel_sub;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_sub;
   rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sim_sub;
-  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr imu_reset_srv;
+  rclcpp::Service<std_srvs::srv::Empty>::SharedPtr odom_reset_srv;
   rclcpp::TimerBase::SharedPtr encoder_timer;
   rclcpp::TimerBase::SharedPtr imu_timer;
   rclcpp::TimerBase::SharedPtr path_timer;
@@ -296,32 +298,31 @@ private:
       angles[1] += 2*3.1415926;
     }
 
-    // RCLCPP_INFO(this->get_logger(), "raw_accel[0]: %f", raw_accel[0]);
-    // RCLCPP_INFO(this->get_logger(), "raw_accel[1]: %f", raw_accel[1]);
-    // RCLCPP_INFO(this->get_logger(), "raw_accel[2]: %f", raw_accel[2]);
-
     // Calculate current forward velocity based on gyro angles and accel
     linear_accel = -(raw_accel[1] * sin(angles[0])) + (raw_accel[2] * cos(angles[0]));
     // vertical_accel = ((raw_accel[0] * cos(angles[0]) * sin(angles[2])) + (raw_accel[1] * cos(angles[0]) * cos(angles[2])) + (-raw_accel[2] * sin(angles[0]) * cos(angles[2])));
+    if ((linear_accel < accel_thresh && (linear_accel > -accel_thresh))) {
+      linear_accel = 0.0;
+    }
 
     // Find current linear and angular velocity
-    linear_vel += linear_accel / loop_rate;
+    linear_vel += (linear_accel / loop_rate);
     angular_vel = raw_gyro[1];
 
     // Blend linear_vel with chassis speed from encoder if magnitude of 
-    // IMU speed is greater or if chassis speed close to 0
-    if ((linear_vel < chassis_speed) && (chassis_speed > 0)) {
-      linear_vel = (chassis_speed * beta/2.) + (linear_vel * (1. - beta/2.));
-    } else if ((linear_vel > chassis_speed) && (chassis_speed < 0)) {
-      linear_vel = (chassis_speed * beta/2.) + (linear_vel * (1. - beta/2.));
-    } else {
-      linear_vel = (chassis_speed * (beta)) + (linear_vel * (1. - (beta)));
-    }
+    linear_vel = (chassis_speed * (beta)) + (linear_vel * (1. - (beta)));
 
     // threshold linear velocity
     if ((linear_vel < vel_thresh) && (linear_vel > -vel_thresh)) {
       linear_vel = 0.;
     }
+
+    // RCLCPP_INFO(this->get_logger(), "raw_accel[1]: %f", raw_accel[1]);
+    // RCLCPP_INFO(this->get_logger(), "raw_accel[2]: %f", raw_accel[2]);
+    // RCLCPP_INFO(this->get_logger(), "linear_accel: %f", linear_accel);
+    // RCLCPP_INFO(this->get_logger(), "linear_vel: %f", linear_vel);
+    // RCLCPP_INFO(this->get_logger(), "angular_vel: %f", angular_vel);
+    // RCLCPP_INFO(this->get_logger(), "chassis_speed: %f", chassis_speed);
 
     // Add velocities to twist message
     odom_msg.twist.twist.linear.x = linear_vel;
@@ -413,10 +414,16 @@ private:
       raw_accel[1] = -msg.linear_acceleration.x;
       raw_accel[2] = -msg.linear_acceleration.y;
     }
+
+    for (int i = 0; i < 3; i++) {
+        if ((raw_accel[i] < accel_thresh && (raw_accel[i] > -accel_thresh))) {
+          raw_accel[i] = 0.0;
+        }
+    }
   }
 
   /// \brief The joint_states callback function, stores the wheel speed of the rear wheels
-  void joint_states_callback(const sensor_msgs::msg::JointState & msg)
+  void joint_states_sim_callback(const sensor_msgs::msg::JointState & msg)
   {
     double speed = msg.velocity[7];
     if(abs(speed - wheel_speed_sim_prev) > 100.) {
@@ -428,8 +435,8 @@ private:
     wheel_speed_sim_prev = wheel_speed_sim;
   }
 
-  /// \brief Callback reseting IMU odometry, should only be used when robot is stationary and level
-  void imu_reset_callback(
+  /// \brief Callback reseting odometry, should only be used when robot is stationary and level at start position
+  void odom_reset_callback(
     std_srvs::srv::Empty::Request::SharedPtr,
     std_srvs::srv::Empty::Response::SharedPtr)
   {
@@ -449,7 +456,33 @@ private:
     accel_angles[2] = 0.0;
     chassis_speed = 0.0;
 
-    RCLCPP_INFO(this->get_logger(), "IMU Reset.");
+    // Reset odom->base tf
+    x_pos = 0.;
+    y_pos = 0.;
+    theta = 0.;
+    publish_odom_tf();
+
+    // Reset map->odom tf
+    // Create tf message
+    geometry_msgs::msg::TransformStamped tf_map_odom_msg;
+    tf_map_odom_msg.header.stamp = get_clock()->now();
+    tf_map_odom_msg.header.frame_id = "odom";
+    tf_map_odom_msg.child_frame_id = "base_link";
+    
+    // Fill out tf message
+    tf_map_odom_msg.transform.translation.x = x_pos;
+    tf_map_odom_msg.transform.translation.y = y_pos;
+    tf2::Quaternion quaternion;
+    quaternion.setRPY(0, 0, theta);
+    tf_map_odom_msg.transform.rotation.x = quaternion.x();
+    tf_map_odom_msg.transform.rotation.y = quaternion.y();
+    tf_map_odom_msg.transform.rotation.z = quaternion.z();
+    tf_map_odom_msg.transform.rotation.w = quaternion.w();
+
+    // Send tf_map_odom
+    tf_broadcaster->sendTransform(tf_map_odom_msg);
+
+    RCLCPP_INFO(this->get_logger(), "Odom Reset.");
   }
 
 
@@ -462,15 +495,11 @@ private:
     // Find transform in robot frame, assume robot starts at (0,0)
     if (angular_vel!=0.){
       rad_curve = linear_vel / angular_vel;
-    } else {
-      rad_curve = 1000000000000.;
-    }
-    delta_theta = angular_vel / loop_rate;
-    if (delta_theta != 0.) {
+      delta_theta = angular_vel / loop_rate;
       x_new_rob = (rad_curve * sin(delta_theta));
       y_new_rob = (rad_curve * cos(delta_theta)) - rad_curve;
     } else {
-      x_new_rob = 0.;
+      x_new_rob = linear_vel / loop_rate;
       y_new_rob = 0.;
     }
 
@@ -479,15 +508,6 @@ private:
     // Find tf in odom frame
     x_pos += ((cos(theta_prev) * x_new_rob) - (sin(theta_prev) * y_new_rob));
     y_pos += ((sin(theta_prev) * x_new_rob) + (cos(theta_prev) * y_new_rob));
-    // RCLCPP_INFO(this->get_logger(), "linear_vel: %f", linear_vel);
-    // RCLCPP_INFO(this->get_logger(), "angular_vel: %f", angular_vel);
-    // RCLCPP_INFO(this->get_logger(), "rad_curve: %f", rad_curve);
-    // RCLCPP_INFO(this->get_logger(), "delta_theta: %f", delta_theta);
-    // RCLCPP_INFO(this->get_logger(), "x_new_rob: %f", x_new_rob);
-    // RCLCPP_INFO(this->get_logger(), "y_new_rob: %f", y_new_rob);
-    // RCLCPP_INFO(this->get_logger(), "x_pos: %f", x_pos);
-    // RCLCPP_INFO(this->get_logger(), "y_pos: %f", y_pos);
-    // RCLCPP_INFO(this->get_logger(), "theta: %f", theta);
 
     // Create tf message
     geometry_msgs::msg::TransformStamped tf_odom_base_msg;

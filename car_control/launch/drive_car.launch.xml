@@ -7,6 +7,7 @@
     <arg name="velocity_control" default="false"/>
     <arg name="traction_control" default="false"/>
     <arg name="use_rviz" default="false"/>
+    <arg name="slow_mode" default="false"/>
 
     <!-- Launch Realsense camera launch file with IMU feedback if robot==local -->
     <include file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py"  if="$(eval '\'$(var robot)\' == \'local\'')">
@@ -66,6 +67,7 @@
     <!-- Launch controller launch file of if use_controller==true -->
     <include file="$(find-pkg-share car_control)/launch/controller.launch.xml"  if="$(eval '\'$(var use_controller)\' == \'true\'')">
         <arg name="enable_controller" value="$(var controller_enabled)" />
+        <arg name="slow_mode" value="$(var slow_mode)" />
     </include>
 
 </launch>
