@@ -16,11 +16,11 @@
         <arg name="traction_control" value="$(var traction_control)"/>
         <arg name="use_rviz" value="false"/>
         <arg name="slow_mode" value="$(var slow_mode)"/>
-        <param from="$(find-pkg-share car_control)/config/slam_params.yaml"/>
     </include>
 
     <!-- Launch slam toolbox -->
     <include file="$(find-pkg-share slam_toolbox)/launch/offline_launch.py">
+        <!-- <param from="$(find-pkg-share car_control)/config/slam_params.yaml"/> -->
     </include>
 
     <!-- Launch rviz node if use_rviz==true -->

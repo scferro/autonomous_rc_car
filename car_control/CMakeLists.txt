@@ -18,6 +18,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(ackermann_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(slam_toolbox REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -38,7 +39,7 @@ add_executable(velocity_control src/velocity_control.cpp)
 ament_target_dependencies(velocity_control rclcpp std_msgs geometry_msgs nav_msgs)
 
 add_executable(controller_interface src/controller_interface.cpp)
-ament_target_dependencies(controller_interface rclcpp std_msgs sensor_msgs std_srvs)
+ament_target_dependencies(controller_interface rclcpp std_msgs sensor_msgs std_srvs slam_toolbox)
 
 add_executable(odometry src/odometry.cpp)
 ament_target_dependencies(odometry rclcpp geometry_msgs sensor_msgs nav_msgs std_srvs tf2 tf2_ros)

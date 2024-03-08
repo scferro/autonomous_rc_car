@@ -15,7 +15,7 @@
 /// SERVERS:
 ///     enable_controller (std_srvs::srv::SetBool): enables/disables sending servo commands from the controller interface node
 /// CLIENTS:
-///     enable_drive (std_srvs::srv::SetBool): enables/disbales drive
+///     enable_drive (std_srvs::srv::SetBool): enables/disables drive
 ///     reset_imu (std_srvs::srv::Empty): resets IMU data
 ///     start_race (std_srvs::srv::Empty): starts a race - the car will launch and do laps or a drag race, depending on nodes running
 
@@ -23,8 +23,10 @@
 #include "std_msgs/msg/int32.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/string.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "std_srvs/srv/empty.hpp"
+#include "slam_toolbox/srv/save_map.hpp"
 
 using namespace std::chrono_literals;
 
@@ -43,6 +45,7 @@ public:
     declare_parameter("cmd_max_slow", 1550);
     declare_parameter("cmd_min_slow", 1450);
     declare_parameter("max_accel", 200);
+    declare_parameter("map_filename", "maps/map");
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
@@ -53,6 +56,7 @@ public:
     cmd_max_slow = get_parameter("cmd_max_slow").as_int();
     cmd_min_slow = get_parameter("cmd_min_slow").as_int();
     max_accel = get_parameter("max_accel").as_int();
+    map_filename = get_parameter("map_filename").as_string();
 
     // Define other variables
     cmd_neutral = (cmd_min + cmd_max) / 2;
@@ -80,6 +84,7 @@ public:
     enable_drive_cli = create_client<std_srvs::srv::SetBool>("enable_drive");
     odom_reset_cli = create_client<std_srvs::srv::Empty>("odom_reset");
     start_race_cli = create_client<std_srvs::srv::Empty>("start_race");
+    save_map_cli = create_client<slam_toolbox::srv::SaveMap>("slam_toolbox/save_map");
 
     // Main timer
     int cycle_time = 1000.0 / loop_rate;
@@ -96,6 +101,7 @@ private:
   bool enable_controller;
   sensor_msgs::msg::Joy msg_prev;
   bool first_msg, slow_mode;
+  std::string map_filename;
   
   // Create ROS publishers, timers, broadcasters, etc.
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr steering_cmd_pub;
@@ -104,6 +110,7 @@ private:
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_drive_cli;
   rclcpp::Client<std_srvs::srv::Empty>::SharedPtr odom_reset_cli;
   rclcpp::Client<std_srvs::srv::Empty>::SharedPtr start_race_cli;
+  rclcpp::Client<slam_toolbox::srv::SaveMap>::SharedPtr save_map_cli;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enable_controller_srv;
   rclcpp::TimerBase::SharedPtr main_timer;
 
@@ -156,6 +163,7 @@ private:
     bool enable_drive_cmd;
     auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
     auto request_empty = std::make_shared<std_srvs::srv::Empty::Request>();
+    auto request_map = std::make_shared<slam_toolbox::srv::SaveMap::Request>();
 
     if (first_msg) {
       msg_prev = msg;
@@ -207,7 +215,7 @@ private:
       enable_controller = false;
     }
 
-    // If reset_imu button is press, call reset IMU service
+    // If reset_imu button is pressed, call reset IMU service
     if (msg.buttons[3]==1 && msg_prev.buttons[3]!=1) {
       int count = 0;
       while ((!odom_reset_cli->wait_for_service(1s)) && (count < 5)) {
@@ -217,7 +225,21 @@ private:
       auto result = odom_reset_cli->async_send_request(request_empty);
     }
 
-    // If start_race button is press, call start_race service
+    // If save_map button is pressed, call reset IMU service
+    if (msg.buttons[7]==1 && msg_prev.buttons[7]!=1) {
+      int count = 0;
+      // Add filename to string message and send
+      std_msgs::msg::String string_msg;
+      string_msg.data = map_filename;
+      request_map->name = string_msg;
+      while ((!save_map_cli->wait_for_service(1s)) && (count < 5)) {
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for save_map service...");
+        count++;
+      }
+      auto result = save_map_cli->async_send_request(request_map);
+    }
+
+    // If start_race button is pressed, call start_race service
     if (msg.buttons[2]==1 && msg_prev.buttons[2]!=1) {
       int count = 0;
       while ((!start_race_cli->wait_for_service(1s)) && (count < 5)) {

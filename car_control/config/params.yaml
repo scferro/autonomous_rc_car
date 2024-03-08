@@ -9,3 +9,4 @@
     max_rpm: 16095.
     steer_angle_range: 0.8
     encoder_ticks: 8192
+    map_filename: "map"
