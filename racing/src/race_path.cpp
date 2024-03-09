@@ -1,4 +1,4 @@
-/// \file path_race.cpp
+/// \file race_path.cpp
 /// \brief Commands the car to drive in a circle
 ///
 /// PARAMETERS:
@@ -12,6 +12,10 @@
 #include <chrono>
 #include <vector>
 #include <cmath>
+#include <string>
+#include <yaml-cpp/yaml.h>
+#include <fstream>
+#include <nav_msgs/msg/path.hpp>
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/u_int64.hpp"
@@ -30,25 +34,33 @@
 #include "nav_msgs/msg/path.hpp"
 #include "tf2_ros/buffer.h"
 #include "std_msgs/msg/int32.hpp"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
 using namespace std::chrono_literals;
 
-class Path_Race : public rclcpp::Node
+class Race_Path : public rclcpp::Node
 {
 public:
-  Path_Race()
-  : Node("path_race")
+  Race_Path()
+  : Node("race_path")
   {
     // Parameters and default values
-    declare_parameter("rate", 100.);
+    declare_parameter("rate", 50.);
     declare_parameter("cmd_max", 2000);
     declare_parameter("cmd_min", 1000);
     declare_parameter("max_rpm", 16095.);
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("gear_ratio", 5.);
-    declare_parameter("Kp", 1.0);
-    declare_parameter("Ki", 0.5);
-    declare_parameter("Kd", 0.25);
+    declare_parameter("Kp_steer", 8.0);
+    declare_parameter("Ki_steer", 0.5);
+    declare_parameter("Kd_steer", 0.25);
+    declare_parameter("angle_delta_max", 3.14159265/2.);
+    declare_parameter("path_filename", "path.yaml");
+    declare_parameter("ramp_rate", 50);
+    declare_parameter("drive_min", 1550);
+    declare_parameter("drive_max", 1650);
+    declare_parameter("look_ahead_throttle", 6);
+    declare_parameter("look_ahead_steer", 2);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
@@ -57,38 +69,46 @@ public:
     max_rpm = get_parameter("max_rpm").as_double();
     wheel_diameter = get_parameter("wheel_diameter").as_double();
     gear_ratio = get_parameter("gear_ratio").as_double();
-    Kp = get_parameter("Kp").as_double();
-    Ki = get_parameter("Ki").as_double();
-    Kd = get_parameter("Kd").as_double();
-
-    // Other variables
-    time = race_time + 10.;
-    race_on = false;
-    max_speed = (max_rpm / gear_ratio) * (wheel_diameter / 2.);
-    cmd_neutral = (cmd_min + cmd_max) / 2;
-    closest_pose_index = 0;
+    Kp_steer = get_parameter("Kp_steer").as_double();
+    Ki_steer = get_parameter("Ki_steer").as_double();
+    Kd_steer = get_parameter("Kd_steer").as_double();
+    angle_delta_max = get_parameter("angle_delta_max").as_double();
+    path_filename = get_parameter("path_filename").as_string();
+    ramp_rate = get_parameter("ramp_rate").as_int();
+    drive_min = get_parameter("drive_min").as_int();
+    drive_max = get_parameter("drive_max").as_int();
+    look_ahead_throttle = get_parameter("look_ahead_throttle").as_int();
+    look_ahead_steer = get_parameter("look_ahead_steer").as_int();
     
     // Create planned path and race_path
+    planned_path = loadPathFromYamlFile();
     planned_path.header.stamp = get_clock()->now();
     planned_path.header.frame_id = "map";
     race_path.header.stamp = get_clock()->now();
     race_path.header.frame_id = "map";
 
+    // Other variables
+    race_time = 100000000000.;
+    time = race_time + 10.;
+    race_on = false;
+    max_speed = (max_rpm / gear_ratio) * (wheel_diameter / 2.);
+    cmd_neutral = (cmd_min + cmd_max) / 2;
+    closest_pose_index = 0;
+    steer_angle_prev = 0.;
+    steer_angle_cum = 0.;
+    drive_cmd_prev = cmd_neutral;
+    path_size = planned_path.poses.size();
+
     // Publishers
     cmd_vel_pub = create_publisher<geometry_msgs::msg::Twist>("cmd_vel", 10);
     planned_path_pub = create_publisher<nav_msgs::msg::Path>("path_plan", 10);
-    race_path_pub = create_publisher<nav_msgs::msg::Path>("path_race", 10);
+    race_path_pub = create_publisher<nav_msgs::msg::Path>("race_path", 10);
     drive_cmd_pub = create_publisher<std_msgs::msg::Int32>("drive_cmd", 10);
-
-    // Subscribers
-    odom_sub = create_subscription<nav_msgs::msg::Odometry>(
-      "odom",
-      10, std::bind(&Path_Race::odom_callback, this, std::placeholders::_1));
 
     // Servers
     start_race_srv = create_service<std_srvs::srv::Empty>(
       "start_race",
-      std::bind(&Path_Race::start_race_callback, this, std::placeholders::_1, std::placeholders::_2));
+      std::bind(&Race_Path::start_race_callback, this, std::placeholders::_1, std::placeholders::_2));
 
     // Clients
     odom_reset_cli = create_client<std_srvs::srv::Empty>("odom_reset");
@@ -98,7 +118,7 @@ public:
     int cycle_time = 1000.0 / loop_rate;
     main_timer = this->create_wall_timer(
       std::chrono::milliseconds(cycle_time),
-      std::bind(&Path_Race::timer_callback, this));
+      std::bind(&Race_Path::timer_callback, this));
       
     // Transform broadcaster and listener
     tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -113,12 +133,16 @@ private:
   int rate;
   double loop_rate;
   int cmd_max, cmd_min, cmd_neutral, closest_pose_index;
-  double time;
+  int ramp_rate, drive_min, drive_max, drive_cmd_prev;
+  int look_ahead_throttle, look_ahead_steer, path_size;
+  double time, race_time;
   bool race_on;
   double max_speed, wheel_diameter, max_rpm, gear_ratio;
-  double Kp, Ki, Kd;
+  double Kp_steer, Ki_steer, Kd_steer, angle_delta_max;
+  double steer_angle_prev, steer_angle_cum, steer_angle_der;
   geometry_msgs::msg::PoseStamped current_pose;
   nav_msgs::msg::Path planned_path, race_path;
+  std::string path_filename;
 
   rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub;
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr drive_cmd_pub;
@@ -138,6 +162,10 @@ private:
   {
     geometry_msgs::msg::Twist cmd_vel_msg;
     std_msgs::msg::Int32 drive_msg;
+
+    // Publish goal pose and race path
+    publish_race_path();
+    publish_goal_path();
 
     // If racing, publish drive and steer commands
     if ((time < race_time) && (time >= 0)) {
@@ -191,30 +219,126 @@ private:
     // Publish commands
     cmd_vel_pub->publish(cmd_vel_msg);
     drive_cmd_pub->publish(drive_msg);
-
-    // Publish goal pose and race path
-    publish_race_path();
-    publish_goal_path();
   }
 
   /// \brief Updates the angular velocity command based on the current position and upcoming poses in path
   /// \return The new angular velocity command
   double calculate_angular()
   {
+    double cmd_vel_steer, angle_delta;
+    geometry_msgs::msg::PoseStamped target_pose;
 
+    if ((closest_pose_index + look_ahead_steer) < path_size) {
+      target_pose = planned_path.poses[closest_pose_index + look_ahead_steer];
+    } else {
+      target_pose = planned_path.poses[closest_pose_index];
+    }
+
+    // Convert to roll, pitch, and yaw
+    double roll, pitch, yaw_target, yaw_current;
+    tf2::Quaternion quaternion_target, quaternion_current;
+    tf2::fromMsg(target_pose.pose.orientation, quaternion_target);
+    tf2::Matrix3x3(quaternion_target).getRPY(roll, pitch, yaw_target);
+    tf2::fromMsg(current_pose.pose.orientation, quaternion_current);
+    tf2::Matrix3x3(quaternion_current).getRPY(roll, pitch, yaw_current);
+
+    // Calculate angle difference and normalize to (-pi, pi), take absolute value
+    angle_delta = yaw_current - yaw_target;
+    while (angle_delta > 3.14159265) {
+      angle_delta += -2 * 3.14159265;
+    }
+    while (angle_delta < -3.14159265) {
+      angle_delta += 2 * 3.14159265;
+    }
+
+    // Calculate error, integral/cumulative error, derivative of error for steering
+    steer_angle_cum += angle_delta * (1.0 / loop_rate);
+    steer_angle_der = (angle_delta - steer_angle_prev) / (1.0 / loop_rate);
+    steer_angle_prev = angle_delta;
+
+    // Calculate steering command using PID
+    cmd_vel_steer = (Kp_steer * angle_delta) + (Ki_steer * steer_angle_cum) + (Kd_steer * steer_angle_der);
+    return cmd_vel_steer;
   }
 
   /// \brief Updates the throttle command based on the current position and upcoming poses in path
   /// \return The new drive_cmd command
-  double calculate_throttle()
+  int calculate_throttle()
   {
+    int drive_cmd;
+    double angle_delta;
+    geometry_msgs::msg::PoseStamped target_pose;
 
+    if ((closest_pose_index + look_ahead_throttle) < path_size) {
+      target_pose = planned_path.poses[closest_pose_index + look_ahead_throttle];
+    } else {
+      target_pose = planned_path.poses[closest_pose_index];
+    }
+
+    // Convert to roll, pitch, and yaw
+    double roll, pitch, yaw_target, yaw_current;
+    tf2::Quaternion quaternion_target, quaternion_current;
+    tf2::fromMsg(target_pose.pose.orientation, quaternion_target);
+    tf2::Matrix3x3(quaternion_target).getRPY(roll, pitch, yaw_target);
+    tf2::fromMsg(current_pose.pose.orientation, quaternion_current);
+    tf2::Matrix3x3(quaternion_current).getRPY(roll, pitch, yaw_current);
+
+    // Calculate angle difference and normalize to (-pi, pi), take absolute value
+    angle_delta = yaw_target - yaw_current;
+    while (angle_delta > 3.14159265) {
+      angle_delta += -2 * 3.14159265;
+    }
+    while (angle_delta < -3.14159265) {
+      angle_delta += 2 * 3.14159265;
+    }
+    angle_delta = abs(angle_delta);
+
+    // Calculate drive command based on angle delta
+    drive_cmd = (((angle_delta_max - angle_delta) / angle_delta_max) * (drive_max - drive_min)) + drive_min;
+
+    // Limit drive to drive max, drive neutral, and limit ramp rate
+    if (drive_cmd > (drive_cmd_prev + (ramp_rate / loop_rate))) {
+      drive_cmd = drive_cmd_prev + (ramp_rate / loop_rate);
+    }
+    if (drive_cmd > drive_max) {
+      drive_cmd = drive_max;
+    }
+    if (drive_cmd < cmd_neutral) {
+      drive_cmd = cmd_neutral;
+    } 
+
+    // Store drive cmd
+    drive_cmd_prev = drive_cmd;
+
+    // Calculate and return throttle command
+    return drive_cmd;
   }
 
   /// \brief Updates the angular velocity command based on the current position and upcoming poses in path
   void find_closest_pose()
   {
+    double dist_to_last, dist_to_check;
+    geometry_msgs::msg::PoseStamped last_pose, check_pose;
+    int check_index = closest_pose_index + 1;
 
+    // Find distance to last pose in path and to next pose in path
+    last_pose = planned_path.poses[closest_pose_index];
+    dist_to_last = sqrt(pow((last_pose.pose.position.x - current_pose.pose.position.x), 2) + pow((last_pose.pose.position.y - current_pose.pose.position.y), 2));
+    check_pose = planned_path.poses[check_index];
+    dist_to_check = sqrt(pow((check_pose.pose.position.x - current_pose.pose.position.x), 2) + pow((check_pose.pose.position.y - current_pose.pose.position.y), 2));
+
+    // If next pose is closer than last pose, check another pose ahead
+    while (dist_to_check < dist_to_last) {
+      // update indexes
+      closest_pose_index += 1;
+      check_index += 1;
+
+      // Check next pose
+      last_pose = planned_path.poses[closest_pose_index];
+      dist_to_last = sqrt(pow((last_pose.pose.position.x - current_pose.pose.position.x), 2) + pow((last_pose.pose.position.y - current_pose.pose.position.y), 2));
+      check_pose = planned_path.poses[check_index];
+      dist_to_check = sqrt(pow((check_pose.pose.position.x - current_pose.pose.position.x), 2) + pow((check_pose.pose.position.y - current_pose.pose.position.y), 2));
+    }
   }
 
   /// \brief Updates the robot path with the current pose and publishes the path
@@ -293,12 +417,35 @@ private:
     // Publish path
     planned_path_pub->publish(planned_path);
   }
+
+    /// \brief Convert YAML Node to geometry_msgs::msg::PoseStamped. Citation (1): ChatGPT
+  geometry_msgs::msg::PoseStamped yamlToPose(const YAML::Node& node) {
+      geometry_msgs::msg::PoseStamped pose;
+      pose.pose.position.x = node["position"]["x"].as<double>();
+      pose.pose.position.y = node["position"]["y"].as<double>();
+      pose.pose.position.z = node["position"]["z"].as<double>();
+      pose.pose.orientation.x = node["orientation"]["x"].as<double>();
+      pose.pose.orientation.y = node["orientation"]["y"].as<double>();
+      pose.pose.orientation.z = node["orientation"]["z"].as<double>();
+      pose.pose.orientation.w = node["orientation"]["w"].as<double>();
+      return pose;
+  }
+
+  /// \brief Load and deserialize a YAML file to nav_msgs::msg::Path. Citation (1): ChatGPT
+  nav_msgs::msg::Path loadPathFromYamlFile() {
+      YAML::Node yamlFile = YAML::LoadFile(path_filename);
+      nav_msgs::msg::Path path;
+      for (const auto& node : yamlFile["poses"]) {
+          path.poses.push_back(yamlToPose(node));
+      }
+      return path;
+  }
 };
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<Path_Race>();
+  auto node = std::make_shared<Race_Path>();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
