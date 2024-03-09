@@ -23,8 +23,12 @@ find_package(tf2_ros REQUIRED)
 add_executable(drag_race src/drag_race.cpp)
 ament_target_dependencies(drag_race rclcpp std_msgs geometry_msgs nav_msgs std_srvs sensor_msgs tf2 tf2_ros)
 
+add_executable(plan_path src/plan_path.cpp)
+ament_target_dependencies(plan_path rclcpp std_msgs geometry_msgs nav_msgs std_srvs sensor_msgs tf2 tf2_ros)
+
 install(TARGETS
   drag_race
+  plan_path
   DESTINATION lib/${PROJECT_NAME}
 )
 
