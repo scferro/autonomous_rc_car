@@ -12,6 +12,10 @@
 #include <chrono>
 #include <vector>
 #include <cmath>
+#include <string>
+#include <yaml-cpp/yaml.h>
+#include <fstream>
+#include <nav_msgs/msg/path.hpp>
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/u_int64.hpp"
@@ -42,19 +46,39 @@ public:
     // Parameters and default values
     declare_parameter("rate", 100.);
     declare_parameter("min_spacing", 1.);
+    declare_parameter("filename", "path.yaml");
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();
     min_spacing = get_parameter("min_spacing").as_double();
+    filename = get_parameter("filename").as_string();
 
     // Other variables
+
+    // Update ground truth red turtle path
+    planned_path.header.stamp = get_clock()->now();
+    planned_path.header.frame_id = "map";
+
+    // Create current pose stamped
+    current_pose.header.stamp = get_clock()->now();
+    current_pose.header.frame_id = "map";
+    current_pose.pose.position.x = 0.0;
+    current_pose.pose.position.y = 0.0;
+    current_pose.pose.position.z = 0.0;
+    current_pose.pose.orientation.x = 0.0;
+    current_pose.pose.orientation.y = 0.0;
+    current_pose.pose.orientation.z = 0.0;
+    current_pose.pose.orientation.w = 1.0;
+
+    // Add current pose to path
+    planned_path.poses.push_back(current_pose);
+
+    // Create prev pose stamped
     prev_pose.header.stamp = get_clock()->now();
     prev_pose.header.frame_id = "map";
     prev_pose.pose.position.x = 0.0;
     prev_pose.pose.position.y = 0.0;
     prev_pose.pose.position.z = 0.0;
-
-    // Add rotation quaternion about Z
     prev_pose.pose.orientation.x = 0.0;
     prev_pose.pose.orientation.y = 0.0;
     prev_pose.pose.orientation.z = 0.0;
@@ -92,6 +116,7 @@ private:
   double loop_rate, min_spacing;
   geometry_msgs::msg::PoseStamped current_pose, prev_pose;
   nav_msgs::msg::Path planned_path;
+  std::string filename;
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr planned_path_pub;
   rclcpp::Service<std_srvs::srv::Empty>::SharedPtr save_path_srv;
@@ -147,10 +172,43 @@ private:
     std_srvs::srv::Empty::Request::SharedPtr,
     std_srvs::srv::Empty::Response::SharedPtr)
   {
+    // Save path to YAML
+    savePathToYamlFile();
 
     // Reset planned path
     nav_msgs::msg::Path empty_path;
     planned_path = empty_path;
+  }
+
+  /// \brief Convert geometry_msgs::msg::PoseStamped to YAML Node. Citation (1): ChatGPT
+  YAML::Node poseToYaml(const geometry_msgs::msg::PoseStamped& pose) {
+      YAML::Node node;
+      node["position"]["x"] = pose.pose.position.x;
+      node["position"]["y"] = pose.pose.position.y;
+      node["position"]["z"] = pose.pose.position.z;
+      node["orientation"]["x"] = pose.pose.orientation.x;
+      node["orientation"]["y"] = pose.pose.orientation.y;
+      node["orientation"]["z"] = pose.pose.orientation.z;
+      node["orientation"]["w"] = pose.pose.orientation.w;
+      return node;
+  }
+
+  /// \brief Convert nav_msgs::msg::Path to YAML Node. Citation (1): ChatGPT
+  YAML::Node pathToYaml(const nav_msgs::msg::Path& path) {
+      YAML::Node node;
+      for (const auto& pose : path.poses) {
+          node["poses"].push_back(poseToYaml(pose));
+      }
+      return node;
+  }
+
+  /// \brief Serialize and save the path to a YAML file. Citation (1): ChatGPT
+  void savePathToYamlFile() {
+      std::ofstream fout(filename);
+      if (fout.is_open()) {
+          YAML::Node yamlPath = pathToYaml(planned_path);
+          fout << yamlPath;
+      }
   }
 };
 

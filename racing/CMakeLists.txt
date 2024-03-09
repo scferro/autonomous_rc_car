@@ -19,12 +19,15 @@ find_package(sensor_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 add_executable(drag_race src/drag_race.cpp)
 ament_target_dependencies(drag_race rclcpp std_msgs geometry_msgs nav_msgs std_srvs sensor_msgs tf2 tf2_ros)
 
 add_executable(plan_path src/plan_path.cpp)
 ament_target_dependencies(plan_path rclcpp std_msgs geometry_msgs nav_msgs std_srvs sensor_msgs tf2 tf2_ros)
+target_link_libraries(plan_path ${YAML_CPP_LIBRARIES})
+target_include_directories(plan_path PRIVATE ${YAML_CPP_INCLUDE_DIRS})
 
 install(TARGETS
   drag_race

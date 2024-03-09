@@ -26,7 +26,7 @@
 #include "std_msgs/msg/string.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "std_srvs/srv/empty.hpp"
-#include "slam_toolbox/srv/save_map.hpp"
+#include "slam_toolbox/srv/serialize_pose_graph.hpp"
 
 using namespace std::chrono_literals;
 
@@ -45,7 +45,7 @@ public:
     declare_parameter("cmd_max_slow", 1550);
     declare_parameter("cmd_min_slow", 1450);
     declare_parameter("max_accel", 200);
-    declare_parameter("map_filename", "maps/map");
+    declare_parameter("map_filename", "map");
     
     // Define parameter variables
     loop_rate = get_parameter("loop_rate").as_double();
@@ -84,7 +84,8 @@ public:
     enable_drive_cli = create_client<std_srvs::srv::SetBool>("enable_drive");
     odom_reset_cli = create_client<std_srvs::srv::Empty>("odom_reset");
     start_race_cli = create_client<std_srvs::srv::Empty>("start_race");
-    save_map_cli = create_client<slam_toolbox::srv::SaveMap>("slam_toolbox/save_map");
+    save_path_cli = create_client<std_srvs::srv::Empty>("save_path");
+    save_map_cli = create_client<slam_toolbox::srv::SerializePoseGraph>("slam_toolbox/serialize_map");
 
     // Main timer
     int cycle_time = 1000.0 / loop_rate;
@@ -110,7 +111,8 @@ private:
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_drive_cli;
   rclcpp::Client<std_srvs::srv::Empty>::SharedPtr odom_reset_cli;
   rclcpp::Client<std_srvs::srv::Empty>::SharedPtr start_race_cli;
-  rclcpp::Client<slam_toolbox::srv::SaveMap>::SharedPtr save_map_cli;
+  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr save_path_cli;
+  rclcpp::Client<slam_toolbox::srv::SerializePoseGraph>::SharedPtr save_map_cli;
   rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr enable_controller_srv;
   rclcpp::TimerBase::SharedPtr main_timer;
 
@@ -163,7 +165,7 @@ private:
     bool enable_drive_cmd;
     auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
     auto request_empty = std::make_shared<std_srvs::srv::Empty::Request>();
-    auto request_map = std::make_shared<slam_toolbox::srv::SaveMap::Request>();
+    auto request_map = std::make_shared<slam_toolbox::srv::SerializePoseGraph::Request>();
 
     if (first_msg) {
       msg_prev = msg;
@@ -225,18 +227,26 @@ private:
       auto result = odom_reset_cli->async_send_request(request_empty);
     }
 
-    // If save_map button is pressed, call reset IMU service
+    // If save_map button is pressed, save map
     if (msg.buttons[7]==1 && msg_prev.buttons[7]!=1) {
       int count = 0;
-      // Add filename to string message and send
-      std_msgs::msg::String string_msg;
-      string_msg.data = map_filename;
-      request_map->name = string_msg;
+      // Add filename and send
+      request_map->filename = map_filename;
       while ((!save_map_cli->wait_for_service(1s)) && (count < 5)) {
         RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for save_map service...");
         count++;
       }
       auto result = save_map_cli->async_send_request(request_map);
+    }
+
+    // If save_path button is pressed, save path
+    if (msg.buttons[6]==1 && msg_prev.buttons[6]!=1) {
+      int count = 0;
+      while ((!save_path_cli->wait_for_service(1s)) && (count < 5)) {
+        RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Waiting for save_path service...");
+        count++;
+      }
+      auto result = save_path_cli->async_send_request(request_empty);
     }
 
     // If start_race button is pressed, call start_race service

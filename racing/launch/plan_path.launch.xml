@@ -2,20 +2,20 @@
 
     <!-- Arguments -->
     <arg name="robot" default="local"/>
-    <arg name="traction_control" default="true"/>
+    <arg name="traction_control" default="false"/>
     <arg name="use_rviz" default="true"/>
+    <arg name="min_spacing" default="1."/>
 
-    <!-- Launch drag racing node -->
-    <node pkg="racing" exec="drag_race">
+    <!-- Launch plan path node -->
+    <node pkg="racing" exec="plan_path">
         <param from="$(find-pkg-share car_control)/config/params.yaml"/>
-        <param name="race_distance" value="10."/>
-        <param name="distance_race" value="true"/>
+        <param name="min_spacing" value="$(var min_spacing)"/>
     </node>
 
     <!-- Launch drive_with_localization launch file -->
     <include file="$(find-pkg-share car_control)/launch/drive_with_localization.launch.xml">
         <arg name="robot" value="$(var robot)"/>
-        <arg name="velocity_control" value="true"/>
+        <arg name="velocity_control" value="false"/>
         <arg name="traction_control" value="$(var traction_control)"/>
         <arg name="use_rviz_mapping" value="$(var use_rviz)"/>
     </include>
