@@ -19,8 +19,8 @@
     </include>
 
     <!-- Launch slam toolbox -->
-    <include file="$(find-pkg-share slam_toolbox)/launch/offline_launch.py">
-        <!-- <param from="$(find-pkg-share car_control)/config/slam_params.yaml"/> -->
+    <include file="$(find-pkg-share slam_toolbox)/launch/online_async_launch.py">
+        <arg name="slam_params_file" value="$(find-pkg-share car_control)/config/slam_params.yaml"/>
     </include>
 
     <!-- Launch rviz node if use_rviz==true -->

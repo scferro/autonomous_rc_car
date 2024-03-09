@@ -223,7 +223,7 @@ public:
       std::bind(&Odometry::imu_timer_callback, this));
     path_timer = this->create_wall_timer(
       std::chrono::milliseconds(path_cycle_time),
-      std::bind(&Odometry::update_path, this));
+      std::bind(&Odometry::path_timer_callback, this));
       
     // Transform broadcaster and listener
     tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -316,13 +316,6 @@ private:
     if ((linear_vel < vel_thresh) && (linear_vel > -vel_thresh)) {
       linear_vel = 0.;
     }
-
-    // RCLCPP_INFO(this->get_logger(), "raw_accel[1]: %f", raw_accel[1]);
-    // RCLCPP_INFO(this->get_logger(), "raw_accel[2]: %f", raw_accel[2]);
-    // RCLCPP_INFO(this->get_logger(), "linear_accel: %f", linear_accel);
-    // RCLCPP_INFO(this->get_logger(), "linear_vel: %f", linear_vel);
-    // RCLCPP_INFO(this->get_logger(), "angular_vel: %f", angular_vel);
-    // RCLCPP_INFO(this->get_logger(), "chassis_speed: %f", chassis_speed);
 
     // Add velocities to twist message
     odom_msg.twist.twist.linear.x = linear_vel;
@@ -580,7 +573,7 @@ private:
   // }
 
   /// \brief Updates the robot path with the current pose and publishes the path
-  void update_path()
+  void path_timer_callback()
   {
     if (publish_path) {
       geometry_msgs::msg::TransformStamped transformStamped;

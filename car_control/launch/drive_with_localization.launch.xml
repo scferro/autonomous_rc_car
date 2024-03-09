@@ -20,7 +20,7 @@
 
     <!-- Launch slam toolbox -->
     <include file="$(find-pkg-share slam_toolbox)/launch/localization_launch.py">
-        <!-- <param from="$(find-pkg-share car_control)/config/localization_params.yaml"/> -->
+        <arg name="slam_params_file" value="$(find-pkg-share car_control)/config/localization_params.yaml"/>
     </include>
 
     <!-- Launch rviz node if use_rviz==true -->

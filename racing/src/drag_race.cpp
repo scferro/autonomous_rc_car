@@ -157,7 +157,6 @@ private:
   int rate;
   double race_time, loop_rate, race_distance;
   int cmd_max, cmd_min, cmd_neutral, sample_size;
-  int state = 1;
   double time, speed;
   bool race_on, distance_race;
   double max_speed, wheel_diameter, max_rpm, gear_ratio;
@@ -251,7 +250,6 @@ private:
     // Publish commands
     cmd_vel_pub->publish(cmd_vel_msg);
     drive_cmd_pub->publish(drive_msg);
-    speed = 0.;
 
     // Publish goal pose and planned path if distance race
     if (distance_race) {
