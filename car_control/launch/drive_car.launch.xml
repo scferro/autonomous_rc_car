@@ -21,15 +21,15 @@
         <arg name="use_rviz" value="$(var use_rviz)" />
     </include>
 
-    <!-- Launch SLLidar launch file if robot==local -->333333333366
-    <node pkg="sllidar_ros2" exec="sllidar_node" if="$(eval '\'$(var robot)\' == \'local\'')">
-        <param name="channel_type" value="serial" />
-        <param name="serial_port" value="/dev/ttyUSB0" />
-        <param name="serial_baudrate" value="115200" />
-        <param name="frame_id" value="laser" />
-        <param name="inverted" value="true" />
-        <param name="angle_compensate" value="true" />
-    </node>
+    <!-- Launch rplidar launch file if robot==local -->
+    <include file="$(find-pkg-share rplidar_ros)/launch/rplidar_a1_launch.py"  if="$(eval '\'$(var robot)\' == \'local\'')">
+        <arg name="channel_type" value="serial" />
+        <arg name="serial_port" value="/dev/ttyUSB0" />
+        <arg name="serial_baudrate" value="115200" />
+        <arg name="frame_id" value="base_laser" />
+        <arg name="inverted" value="true" />
+        <arg name="angle_compensate" value="true" />
+    </include>
 
     <!-- Launch odometry node if robot==local -->
     <node pkg="car_control" exec="odometry" if="$(eval '\'$(var robot)\' == \'local\'')">

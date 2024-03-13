@@ -42,9 +42,9 @@ public:
     declare_parameter("cmd_min", 1000);
     declare_parameter("enable_controller", false);
     declare_parameter("slow_mode", true);
-    declare_parameter("cmd_max_slow", 1550);
-    declare_parameter("cmd_min_slow", 1450);
-    declare_parameter("max_accel", 200);
+    declare_parameter("cmd_max_slow", 1650);
+    declare_parameter("cmd_min_slow", 1350);
+    declare_parameter("max_accel", 300);
     declare_parameter("map_filename", "map");
     
     // Define parameter variables

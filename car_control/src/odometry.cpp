@@ -98,7 +98,7 @@ public:
         }
 
         // Combine the two bytes received into one 16-bit value and mask out the first two bits
-        uint16_t angle = ((rx[0] << 8) | rx[1]) & 0x1FFF;
+        uint16_t angle = ((rx[0] << 8) | rx[1]) & 0x3FFF;
 
         return angle;
     }
@@ -120,7 +120,7 @@ public:
     declare_parameter("loop_rate", 200.);
     declare_parameter("encoder_rate", 1000.);
     declare_parameter("encoder_rate_sim", 100.);
-    declare_parameter("encoder_ticks", 8192);
+    declare_parameter("encoder_ticks", 16384);
     declare_parameter("gear_ratio", 5.);
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("alpha", 0.02);
@@ -129,7 +129,7 @@ public:
     declare_parameter("accel_thresh", 0.05);
     declare_parameter("vel_thresh", 0.01);
     declare_parameter("path_rate", 10.);
-    declare_parameter("simulate", true);
+    declare_parameter("simulate", false);
     declare_parameter("publish_path", false);
     
     // Define parameter variables
@@ -345,6 +345,19 @@ private:
       // If not using simulation, read encoder for wheel speed
       angle = encoder.readAngle();
 
+      int margin = 25;
+
+      // Filtering weird encoder readings
+      // if ((2*angle+margin > angle_prev) && (2*angle-margin < angle_prev)) {
+      //   angle = angle_prev;
+      // } else if ((0.5*angle+margin > angle_prev) && (0.5*angle-margin < angle_prev)) {
+      //   angle = angle_prev;
+      // } else if (((2*angle-encoder_ticks)+margin > angle_prev) && ((2*angle-encoder_ticks)-margin < angle_prev)) {
+      //   angle = angle_prev;
+      // } else if ((0.5*(angle+encoder_ticks)+margin > angle_prev) && (0.5*(angle+encoder_ticks)-margin < angle_prev)) {
+      //   angle = angle_prev;
+      // }
+
       // Calculate change since last reading
       delta = angle - angle_prev;
       if (abs(delta) > encoder_ticks/2) {
@@ -354,6 +367,8 @@ private:
           delta = (encoder_ticks - abs(delta));
         }
       }
+
+      // RCLCPP_INFO(this->get_logger(), "delta: %f, \nangle: %d", delta, angle);
       
       if (abs(delta) < 5.) {
         delta = 0.0;

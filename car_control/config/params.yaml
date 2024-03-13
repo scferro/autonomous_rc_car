@@ -8,5 +8,5 @@
     gear_ratio: 5.
     max_rpm: 16095.
     steer_angle_range: 0.8
-    encoder_ticks: 8192
+    encoder_ticks: 16384
     map_filename: "map"
