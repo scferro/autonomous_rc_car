@@ -24,7 +24,7 @@ Once the controller is launched, use the following buttons and sticks to control
 - Right Bumper - enable publishing throttle and steering commands from the `controller_interface` node
 - Left Bumper - disable publishing throttle and steering commands from the `controller_interface` node
 - A - calls the `enable_drive` service to enable the drive motor
-- B - calls the `enable_drive` service to disable the drive motor
+- B - calls the `enable_drive` service to disable the drive motor (I use this to be the kill button when testing)
 - X - calls the `start_race` service to start a race
 - Y - calls the `reset_odom` service to reset all odometry to the initial state
 - Start - calls the `slam_toolbox/serialize_map` service to save the current map when mapping with Slam Toolbox
