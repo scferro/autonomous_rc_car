@@ -4,7 +4,7 @@ This repository contains a collection of C++ ROS 2  packages for controlling an 
 
 These packages were developed for a custom autonomous version of the <a href="https://www.reddit.com/r/EngineeringNS/comments/zvellk/tarmo5/" target="_blank"><u>Tarmo5</u></a> RC car project. The car was modified to include an Intel RealSense d435i camera and IMU, a RPLidar A1 360 scanning lidar, and an AS5048a encoder for feedback. Though these packages were designed with this specific robot in mind, they could easily be modified for other Ackermann robots with similar sensor setups. 
 
-For more information on the full project, check out my <a href="https://scferro.github.io/projects/00-autonomous-rc-car" target="_blank"><u>portfolio post on the project</u></a>.
+For more information on the full project, check out my <a href="https://scferro.github.io/projects/00-autonomous-rc-car" target="_blank"><u>portfolio post about the project</u></a>.
 
 ## Package List
 - rviz_description: The URDF description of the robot and simulation files for Isaac Sim.
