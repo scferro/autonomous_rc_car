@@ -36,6 +36,8 @@ Once the controller is launched, use the following buttons and sticks to control
 ## Launching Tele-Op Control
 To launch tele-op control, use the command  `ros2 launch car_control drive_car.launch.xml`. This will launch the controller launch file and all the required nodes for controlling the car. Note that by default, the robot will launch with the controller in `disabled` mode, meaning it will not publish commands. Simply press the right bumper to start publishing.
 
+If you are using the Issac Sim simulation, launch these nodes with `ros2 launch car_control drive_car.launch.xml robot:=simulate`
+
 ## Launching Drag Racing Control
 There are two types of drag racing possible with this package, timed drag racing and distance racing. Timed races run for a set time and can be launched with the command `ros2 launch racing drag_race_time.launch.xml race_time:=5.0` where `race_time:=5.0` can be replaced with the desired race time in seconds. 
 
@@ -43,9 +45,14 @@ Distance races use Slam Toolbox to localize the robot, and run until the robot h
 
 Once the race launch file is running, press the X button on the controller to start the race. Overall, the timed drag races are far more reliable, as Slam Toolbox has issues with poor odometry due to wheel spin from launching the car.
 
+If you are using the Issac Sim simulation, use `ros2 launch racing drag_race_time.launch.xml race_time:=5.0 robot:=simulate` and `ros2 launch racing drag_race_distance.launch.xml race_distance:=5.0 robot:=simulate`
+
 ## Mapping and Racing a Path
 Mapping and racing a path requires three steps. First, you need to map the environment using Slam Toolbox. To do this, use the command `ros2 launch car_control drive_with_slam.launch.xml` to begin mapping. This will launch the robot in slow_mode, which limits throttle commands and ramping speed to ensure smooth operation when mapping. It is recommended to make several passes around the environment to ensure you achieve loop closure. This will ensure you have the most accurate map possible. Once your environment is mapped, press the Start button on the controller to save the map.
 
 Next, you need to plan a path for the robot to follow. To do this, run the command `ros2 launch racing plan_path.launch.xml`. This will launch slam toolbox in localization mode (faster, does not add to the map) and the robot will again be launched in slow mode. To create a path, simply drive the robot along the path you want it to follow. The robot will track it's path by adding poses to a ROS2 Path message. Once you have completed the path, press the select button on the controller to save it as a CSV file.
 
-Finally, run `ros2 launch racing race_path.launch.xml` to race the path. The robot should first manually be reset to it's initial position. To begin the race, simply press the X button on the controller. The robot should now follow the path to the end position.
+Finally, run `ros2 launch racing race_path.launch.xml` to race the path. The robot should first manually be reset to it's initial position. To begin the race, simply press the X button on the controller. The robot should now follow the path to the end position. Like with the other packages, add `robot:= simulate` if you are using the Isaac Sim simulation environment.
+
+## Isaac Sim
+To use Isaac Sim, open the program from the Omniverse launcher, then open the file `car_sim.usd` to load the simulation environment. Press the play button to control the robot and broadcast feedback from the sensors.

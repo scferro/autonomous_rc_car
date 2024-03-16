@@ -51,15 +51,15 @@ public:
     declare_parameter("max_rpm", 16095.);
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("gear_ratio", 5.);
-    declare_parameter("Kp_steer", 6.0);
-    declare_parameter("Ki_steer", 1.0);
-    declare_parameter("Kd_steer", 0.5);
+    declare_parameter("Kp_steer", 8.0);
+    declare_parameter("Ki_steer", 0.25);
+    declare_parameter("Kd_steer", 0.75);
     declare_parameter("angle_delta_max", 3.14159265/2.);
     declare_parameter("path_filename", "path.yaml");
     declare_parameter("ramp_rate", 50);
-    declare_parameter("drive_min", 1525);
+    declare_parameter("drive_min", 1550);
     declare_parameter("drive_max", 1650);
-    declare_parameter("look_ahead_throttle", 6);
+    declare_parameter("look_ahead_throttle", 10);
     declare_parameter("look_ahead_steer", 3);
 
     // Define parameter variables
@@ -292,6 +292,8 @@ private:
       angle_delta += 2 * 3.14159265;
     }
     angle_delta = abs(angle_delta);
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "angle_delta: %f", angle_delta);
+    
 
     // Calculate drive command based on angle delta
     drive_cmd = (((angle_delta_max - angle_delta) / angle_delta_max) * (drive_max - drive_min)) + drive_min;
