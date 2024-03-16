@@ -14,6 +14,9 @@ This repository should be cloned into the source folder of a ROS 2 workspace on 
 
 Once the repo is cloned, build the packages in the workspace by simply using `colcon build`. Building takes ~1 minutes on the Jetson. Cross compilation can be used to accelerate this process if desired. 
 
+## Visualize in RViz
+To visualize the URDF in RViz, the command `ros2 launch rviz_description car_rviz.launch.py` can be used. If you would like to manually adjust the joints in the visualization, use `ros2 launch rviz_description car_rviz.launch.py use_jsp:=jsp_gui`.
+
 ## Xbox Controller
 Many of the nodes in this repo can be controlled with an Xbox Controller by using the `controller_interface` node. This node, and the `joy` node which is also required to be running, can be launched with the command `ros2 launch car_control controller.launch.xml`. Note that this launches the controller only, not the car.
 
@@ -30,11 +33,19 @@ Once the controller is launched, use the following buttons and sticks to control
 - Start - calls the `slam_toolbox/serialize_map` service to save the current map when mapping with Slam Toolbox
 - Select - calls the `save_path` service to save the current path when creating a path for a point-to-point race
 
-
 ## Launching Tele-Op Control
-
+To launch tele-op control, use the command  `ros2 launch car_control drive_car.launch.xml`. This will launch the controller launch file and all the required nodes for controlling the car. Note that by default, the robot will launch with the controller in `disabled` mode, meaning it will not publish commands. Simply press the right bumper to start publishing.
 
 ## Launching Drag Racing Control
+There are two types of drag racing possible with this package, timed drag racing and distance racing. Timed races run for a set time and can be launched with the command `ros2 launch racing drag_race_time.launch.xml race_time:=5.0` where `race_time:=5.0` can be replaced with the desired race time in seconds. 
 
+Distance races use Slam Toolbox to localize the robot, and run until the robot has covered a specified distance. They can be launched with the command `ros2 launch racing drag_race_distance.launch.xml race_distance:=5.0` where `race_distance:=5.0` can be replaced with the desired race distance in meters.
+
+Once the race launch file is running, press the X button on the controller to start the race. Overall, the timed drag races are far more reliable, as Slam Toolbox has issues with poor odometry due to wheel spin from launching the car.
 
 ## Mapping and Racing a Path
+Mapping and racing a path requires three steps. First, you need to map the environment using Slam Toolbox. To do this, use the command `ros2 launch car_control drive_with_slam.launch.xml` to begin mapping. This will launch the robot in slow_mode, which limits throttle commands and ramping speed to ensure smooth operation when mapping. It is recommended to make several passes around the environment to ensure you achieve loop closure. This will ensure you have the most accurate map possible. Once your environment is mapped, press the Start button on the controller to save the map.
+
+Next, you need to plan a path for the robot to follow. To do this, run the command `ros2 launch racing plan_path.launch.xml`. This will launch slam toolbox in localization mode (faster, but no new mapping) and the robot will again be launched in slow mode. To create a path, simply drive the robot along the path you want it to follow. The robot will track it's path by adding poses to a ROS2 Path message. Once you have completed the path, press the select button on the controller to save it as a CSV file.
+
+Finally, run `ros2 launch racing race_path.launch.xml` to race the path. The robot should first manually be reset to it's initial position. To begin the race, simply press the X button on the controller. The robot should now follow the path to the end position.
