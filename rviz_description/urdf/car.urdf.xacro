@@ -827,13 +827,13 @@
      </joint>
 
       <joint name="lidar_sensor_joint" type="fixed">
-        <origin xyz="0.08 -0 0.215" rpy="0 0 0" />
+        <origin xyz="0.08 -0 0.225" rpy="0 0 0" />
         <parent link="base_link" />
         <child link="base_laser" />
       </joint>
 
       <joint name="camera_sensor_joint" type="fixed">
-        <origin xyz="0.1575 -0 0.145" rpy="1.5707 0 1.5707" />
+        <origin xyz="0.1575 -0 0.155" rpy="1.5707 0 1.5707" />
         <parent link="base_link" />
         <child link="camera_link" />
       </joint>

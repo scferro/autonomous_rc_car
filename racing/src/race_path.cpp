@@ -51,16 +51,16 @@ public:
     declare_parameter("max_rpm", 16095.);
     declare_parameter("wheel_diameter", 0.108);
     declare_parameter("gear_ratio", 5.);
-    declare_parameter("Kp_steer", 8.0);
-    declare_parameter("Ki_steer", 0.5);
-    declare_parameter("Kd_steer", 0.25);
+    declare_parameter("Kp_steer", 6.0);
+    declare_parameter("Ki_steer", 1.0);
+    declare_parameter("Kd_steer", 0.5);
     declare_parameter("angle_delta_max", 3.14159265/2.);
     declare_parameter("path_filename", "path.yaml");
     declare_parameter("ramp_rate", 50);
-    declare_parameter("drive_min", 1550);
+    declare_parameter("drive_min", 1525);
     declare_parameter("drive_max", 1650);
     declare_parameter("look_ahead_throttle", 6);
-    declare_parameter("look_ahead_steer", 2);
+    declare_parameter("look_ahead_steer", 3);
 
     // Define parameter variables
     loop_rate = get_parameter("rate").as_double();

@@ -1,0 +1,13 @@
+repositories:
+  realsense-ros:
+    type: git
+    url: git@github.com:IntelRealSense/realsense-ros.git
+    version: humble
+  rplidar_ros:
+    type: git
+    url: git@github.com:Slamtec/rplidar_ros.git
+    version: humble
+  project:
+    type: git
+    url: git@github.com:scferro/autonomous_rc_car.git
+    version: main
